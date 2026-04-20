@@ -74,7 +74,7 @@
 
 ---
 
-#### T-003: tileLogic.js + 10-case data-driven unit test
+#### T-003: tileLogic.js + 10-case data-driven unit test ✅ **Done** (PR #4, `a80c12f`)
 **Epic:** E3 | **Estimate:** 1h | **Priority:** P0 | **Dependencies:** —
 
 **Опис:** Pure `resolveTile(cell, neighbors)` — 10 рядків. `it.each(fixture)` тест на всі 10 комбінацій з TDD §5.1.
