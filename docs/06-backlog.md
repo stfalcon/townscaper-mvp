@@ -244,7 +244,7 @@
 
 ---
 
-#### T-013: Save/Load з edge cases (quota, private mode)
+#### T-013: Save/Load з edge cases (quota, private mode) ✅ **Done** (PR #13, `74c5bad`)
 **Epic:** E5 | **Estimate:** 4h | **Priority:** P0 | **Dependencies:** T-002, T-004
 
 **Опис:** `saveState.js` з:

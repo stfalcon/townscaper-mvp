@@ -4,7 +4,7 @@
 
 ## Остання сесія
 **Дата:** 2026-04-20
-**Що зроблено:** T-011 завершено — UI палітра з 5+1 кольорів, клавіші 1-6, Surprise unlock після 10 placements. Плюс по ходу — fix/tile-vertical-gaps (видно було щілини між поверхами). 107 unit + 50 E2E.
+**Що зроблено:** T-013 завершено — Save/Load з edge cases. Гра ПЕРЕЖИВАЄ F5. Debounced 2с, quota error → toast, Safari private → banner + in-memory, corrupt JSON → silent clear. 122 unit + 56 E2E.
 
 ## Поточний стан
 - 🟢 Infra: repo + CI (3 джоби: test + e2e + deploy) + Pages + branch protection (required: Unit tests + E2E)
@@ -20,25 +20,22 @@
 - 🟢 **T-008 Done:** 4 silhouette-distinct geometries (30% height delta)
 - 🟢 **hotfix tile-vertical-gaps:** stacked cells touch правильно
 - 🟢 **T-011 Done:** палітра UI + клавіші 1-6 + Surprise unlock
-- 🟢 Tests: 107 unit + 50 E2E
-- 🔴 T-013 — Save/Load з edge cases (4h) — наступне
+- 🟢 **T-013 Done:** Save/Load + debounce + quota/private/corrupt handling
+- 🟢 Tests: 122 unit + 56 E2E
+- 🔴 Далі — варіанти: T-012 (mode toggle UI), T-014 (place/remove tweens), T-016 (Random City), T-018 (onboarding)
 
 ## Deploy URL
 **https://stfalcon.github.io/townscaper-mvp/**
-Last deploy: 2026-04-20, T-011 merge (commit `3af703a`). **Палітра UI — можна грати повноцінно**: вибирай колір кліком або 1-5, склади місто, отримай 6-й Surprise-колір після 10 будинків.
+Last deploy: 2026-04-20, T-013 merge (commit `74c5bad`). **Гра переживає F5.** Вся прогресія персистується.
 
-## Наступна задача
-**T-013: Save/Load у localStorage з edge cases** (4h)
+## Наступна задача — вибір user
 
-- Debounced auto-save 2с
-- `pause()/resume()` для cityGen
-- `QuotaExceededError` → toast, continue in-memory
-- `localStorage` недоступний (Safari private mode) → fallback to Map + banner
-- `fromJSON` → resolver.resolveAll() (бо tileType не персистується)
-- Mock-based unit tests
-- AC-F5-01..07, IS-02, IS-03
+**A. T-016 Random City** (2h) — клавіша R → BFS-генератор 30-60 будинків з cascade-анімацією. Wow-момент для 12-річки.
+**B. T-014 Place/Remove анімації** (2h) — scale-in bounce при placement, scale-out при remove, використовує існуючий TweenManager.
+**C. T-012 Mode toggle** (1h) — Build/Erase кнопки у top-right для 7-річки яка не має ПКМ.
+**D. T-018 Onboarding** (1h) — SVG arrow + «Тикни — побудуй!» при першому запуску для 7-річки.
 
-Після T-013 гра «справжня» — F5 не втрачає місто.
+Рекомендую **T-016 Random City** — це головний wow-момент з Vision; після нього 12-річка одразу в захваті. І воно ДОЗВОЛИТЬ мені тестувати стрес-сценарії (20+ concurrent tweens коли буде T-014).
 
 ## Blockers
 Немає. Очікую «ок» від user.
@@ -60,6 +57,7 @@ Last deploy: 2026-04-20, T-011 merge (commit `3af703a`). **Палітра UI —
 | T-008 | ✅ Done | `006db2b` (PR #10) | 2026-04-20 |
 | fix/gaps | ✅ Done | `f1cbe98` (PR #11) | 2026-04-20 |
 | T-011 | ✅ Done | `3af703a` (PR #12) | 2026-04-20 |
+| T-013 | ✅ Done | `74c5bad` (PR #13) | 2026-04-20 |
 
 ## Notes
 - Node 20 deprecation warning у Actions (non-blocking, fix до червня 2026)
