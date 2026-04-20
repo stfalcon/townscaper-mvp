@@ -4,46 +4,41 @@
 
 ## Остання сесія
 **Дата:** 2026-04-20
-**Що зроблено:** Документація готова, всі 7 docs пройшли cross-review 6 агентів, створено v2. CLAUDE.md в корені налаштовано. Код ще не починався.
+**Що зроблено:** Infra setup завершено — repo створено, CI + Pages працюють, перший deploy зелений.
 
 ## Поточний стан
-- 🟢 Docs v2 готові (vision, gdd, art-brief, tdd, test-plan, backlog, agents-md)
-- 🟢 CLAUDE.md у корені налаштовано з PO workflow
-- 🔴 Git repo: не ініціалізовано
-- 🔴 GitHub remote: не створено
-- 🔴 CI workflow: не створено
-- 🔴 Код: не починався
-- 🔴 GitHub Pages: не налаштовано
+- 🟢 Docs v2 (7 файлів після cross-review)
+- 🟢 CLAUDE.md у корені
+- 🟢 Git repo: https://github.com/stfalcon/townscaper-mvp (public)
+- 🟢 CI workflow: `.github/workflows/ci.yml` — test + deploy, **зелений**
+- 🟢 Branch protection на main: require «Unit tests» green, no force-push, no deletions
+- 🟢 GitHub Pages: `https://stfalcon.github.io/townscaper-mvp/` (HTTP 200)
+- 🟢 Smoke tests: 2 passing (infrastructure validation)
+- 🔴 Код гри: не починався (наступне — T-001)
+
+## Deploy URL
+**https://stfalcon.github.io/townscaper-mvp/**
+Last deploy: 2026-04-20, initial infra commit (placeholder page).
 
 ## Наступна задача
 **T-001: Setup + Three.js сцена + import map + shims** (2h estimate)
 
-Але ПЕРЕД T-001 треба infra (одноразово):
-1. `git init` + перший commit
-2. `gh repo create townscaper-mvp --public --source=. --push`
-3. Створити `.github/workflows/ci.yml` (test + playwright + deploy-pages)
-4. Налаштувати branch protection на main (squash merge, require CI green)
-5. Enable GitHub Pages, source = `gh-pages` branch (або `main` через workflow)
-
-Після infra — перший merge → автоматичний deploy → user отримує URL для тестування.
+Див. `docs/06-backlog.md` для повних DoD + AC. Коротко:
+- Додати Three.js r160 через jsdelivr + `es-module-shims` у `index.html`
+- Створити `src/main.js`, `src/constants.js`, `src/renderer.js`
+- Порожня сцена: sky-градієнт, ambient + directional + hemisphere lights, ground-plane 30×30
+- Orthographic camera (dimetric 30°, yaw 45°)
+- RAF render loop, `?dev=1` → stats.js overlay
 
 ## Blockers
-Немає. Чекаємо команди user «стартуємо» щоб почати infra-setup.
-
-## Deploy URL
-_(буде доступна після першого successful CI run)_
+Немає. Очікую «ок» від user після тесту placeholder URL → беру T-001.
 
 ## Історія задач
-_(заповнюватиметься після Done кожної задачі)_
 
 | T-XXX | Status | Commit | Date |
 |-------|--------|--------|------|
-| — | — | — | — |
+| infra-setup | ✅ Done | `68a4...` (main) | 2026-04-20 |
 
-## Рішення що прийняті під час роботи
-_(ADR-lite: додавати тут якщо виникає нова архітектурна розвилка не у TDD)_
-
-Немає поки що.
-
-## Знані обмеження / technical debt
-Немає поки що.
+## Notes
+- Node 20 deprecation warning у Actions (non-blocking, fix до червня 2026)
+- Playwright + happy-dom поки не встановлені — додамо коли потрібно (T-002 для happy-dom, T-007 для Playwright)
