@@ -4,7 +4,7 @@
 
 ## Остання сесія
 **Дата:** 2026-04-20
-**Що зроблено:** T-005 завершено — 4-пульний InstancedMesh з instanceColor. ПЕРШИЙ візуальний результат: кубики реально зʼявляються на сцені. Зловили і виправили баг чорних кубиків (vertexColors:true vs instanceColor).
+**Що зроблено:** T-006 завершено — Math-based picking (DDA) + hover ghost cursor. Курсор тепер «йде» за мишкою по сітці з wireframe-підсвіткою. Червоний для невалідних позицій. 96 unit + 20 E2E.
 
 ## Поточний стан
 - 🟢 Infra: repo + CI (3 джоби: test + e2e + deploy) + Pages + branch protection (required: Unit tests + E2E)
@@ -14,23 +14,25 @@
 - 🟢 **T-003 Done:** pure resolveTile + 10-case data-driven test
 - 🟢 **T-004 Done:** TileResolver (priority=1) + no-op optimization + resolveAll
 - 🟢 **T-005 Done:** 4 InstancedMesh пули + instanceColor + swap-remove + dev spawner
-- 🟢 Tests: 86 unit (100% coverage) + 16 E2E (11 existing + 5 нові для T-005)
-- 🔴 T-006 — math-based picking (DDA) + ghost cursor (5h)
+- 🟢 **T-006 Done:** DDA picking + hover ghost cursor (pointer-driven)
+- 🟢 Tests: 96 unit + 20 E2E
+- 🔴 T-007 — PointerEvents place/remove з drag-threshold (3h)
 
 ## Deploy URL
 **https://stfalcon.github.io/townscaper-mvp/**
-Last deploy: 2026-04-20, T-005 merge (commit `6ad6bdc`). **Вперше видно voxel-сцену.** Через `?spawn=500` генерується кластер кольорових кубиків.
+Last deploy: 2026-04-20, T-006 merge (commit `fa9d692`). **Hover cursor працює** — водиш мишкою, бачиш wireframe-виділення.
 
 ## Наступна задача
-**T-006: Math-based picking (DDA) + ghost cursor** (5h estimate)
+**T-007: PointerEvents + Place/Remove з drag-threshold** (3h estimate)
 
-- `pick(pointer)` через Amanatides-Woo DDA (TDD §5.2) — raycast тільки по ground plane, далі walk через voxel grid з `state.getCell()`
-- Повертає `{ hitCell, placementCoord, face }`
-- Ghost cursor (hover-outline mesh) у coord-місці, колір = currentColor (з палітри) для valid, червоний для `canPlace.ok=false`
-- Unit test `pick()` на 20 напрямків камери × cell конфігурацій
-- NF-1.10: <0.2мс незалежно від кількості cells
+- ЛКМ → `state.setCell` з currentColor (поки hardcoded 1)
+- ПКМ → `state.removeCell` + preventDefault на contextmenu
+- Drag detection: ≤8px, ≤300мс → click, інакше ignore
+- Passive:false для wheel (для T-CAM далі)
+- Focus management: tabindex=0, auto-focus на pointerdown
+- AC-F1-01..09, AC-F2-01..03
 
-Потім T-007 (Place/Remove з drag-threshold) — після цього вже можна буде клікати мишкою.
+Після цього вже можна буде справді грати мишкою. Далі T-008 (4 варіації геометрій) або T-CAM (камера обертання).
 
 ## Blockers
 Немає. Очікую «ок» від user.
@@ -46,6 +48,7 @@ Last deploy: 2026-04-20, T-005 merge (commit `6ad6bdc`). **Вперше видн
 | T-003 | ✅ Done | `a80c12f` (PR #4) | 2026-04-20 |
 | T-004 | ✅ Done | `85737bc` (PR #5) | 2026-04-20 |
 | T-005 | ✅ Done | `6ad6bdc` (PR #6) | 2026-04-20 |
+| T-006 | ✅ Done | `fa9d692` (PR #7) | 2026-04-20 |
 
 ## Notes
 - Node 20 deprecation warning у Actions (non-blocking, fix до червня 2026)

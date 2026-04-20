@@ -120,7 +120,7 @@
 
 ---
 
-#### T-006: Math-based picking (DDA) + ghost cursor
+#### T-006: Math-based picking (DDA) + ghost cursor ✅ **Done** (PR #7, `fa9d692`)
 **Epic:** E2 | **Estimate:** 5h | **Priority:** P0 | **Dependencies:** T-005
 
 **Опис:** Реалізувати `pick(pointer)` через Amanatides-Woo DDA з TDD §5.2. Raycast тільки проти ground plane; далі walk через voxel grid з `state.getCell()` lookup. Повертає `{ hitCell, placementCoord, face }`. Hover-outline відповідно.
