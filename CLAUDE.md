@@ -26,26 +26,39 @@
 
 1. Беру задачу T-XXX з `docs/06-backlog.md` у порядку dependency graph
 2. Створюю гілку `task/T-XXX-short-name` з main
-3. Пишу тести ПЕРШИМИ (TDD з зубами)
+3. Пишу тести ПЕРШИМИ (TDD з зубами) — unit + E2E
 4. Імплементую мінімум щоб тести пройшли
-5. Локально: `npm test` + `npx playwright test` — зелені
+5. **Локальна верифікація:**
+   - `npm test` — unit зелені
+   - `npm run e2e` — E2E зелені (Playwright проти local dev server)
+   - E2E test ОБОВʼЯЗКОВО зберігає screenshot у `docs/screenshots/T-XXX-<name>.png` (мій візуальний доказ що воно працює)
 6. Commit + push
-7. CI на GitHub Actions запускається автоматично
+7. CI на GitHub Actions запускається автоматично (test + e2e + deploy)
 8. **Якщо CI зелений** → squash-merge до main → auto-deploy на GitHub Pages
 9. **Якщо CI червоний** → до 3 спроб фіксу → якщо не зміг, створюю `docs/blocked/BLOCKED-T-XXX.md` і пінгую user
 10. Оновлюю `docs/06-backlog.md` (status: Done, commit hash)
 11. Оновлюю `docs/STATE.md` (what's done, what's next)
-12. **Видаю PO Report** користувачу (див. формат нижче)
+12. **Видаю PO Report** користувачу (див. формат нижче) з вкладеним screenshot-ом — юзер бачить результат не відкриваючи URL
 
 ### PO Report формат (output після кожної задачі)
 
 ```
 ✅ T-XXX готово — [коротка назва]
 
-🌐 Тестуй: https://<user>.github.io/townscaper-mvp
+📸 Візуальне превʼю: docs/screenshots/T-XXX-<name>.png
+(інколи прикріплюю прямо в чат для миттєвого перегляду)
+
+🤖 Auto-verified (Playwright):
+   - Page loads: HTTP 200
+   - Canvas renders: ✓
+   - Console clean: 0 errors, 0 warnings
+   - Resize: preserves rendering
+   - Screenshot captured: N bytes
+
+🌐 Тестуй у браузері: https://stfalcon.github.io/townscaper-mvp
    (оновилось N хв тому)
 
-🎮 Що перевірити (~3 хв):
+🎮 Що перевірити руками (~3 хв):
    1. [конкретний крок]
    2. [конкретний крок]
    3. [конкретний крок]
@@ -57,6 +70,8 @@
 ```
 
 **Мова PO-report — продуктова, не технічна.** Не «InstancedMesh pool migration» — а «кубики починають виглядати по-різному залежно від сусідів».
+
+**Auto-verified секція** — мої Playwright-тести спочатку ловлять очевидні регресії. Твоя ручна перевірка — для того що Playwright не бачить (gameplay feel, візуальна естетика, UX).
 
 ### Коли ЗУПИНИТИСЬ і запитати user
 
@@ -142,14 +157,22 @@ Why this change (2-3 lines if non-obvious).
 
 Задача T-XXX готова ТІЛЬКИ якщо:
 - [ ] Всі AC з DoD позначені [x] у `docs/05-test-plan.md`
-- [ ] `npm test` — зелений
-- [ ] `npx playwright test` — зелений (якщо фіча P0/P1)
-- [ ] Працює у Chrome AND Safari
+- [ ] `npm test` — unit зелений
+- [ ] `npm run e2e` — E2E зелений (ОБОВʼЯЗКОВО — включно з `docs/screenshots/T-XXX-*.png` збереженим)
+- [ ] Screenshot візуально відповідає очікуванням (я сам дивлюся через Read на png)
+- [ ] Працює у Chrome (E2E автоматично) і Safari (manual якщо доступно)
 - [ ] FPS ≥60 @ 100 cells на M1, ≥30 @ 500 cells на Intel UHD
-- [ ] 0 console.error/warning у DevTools
+- [ ] 0 console.error/warning у DevTools (крім whitelist: GL Driver Message)
 - [ ] **CI зелений на GitHub** (не тільки локально)
 - [ ] `docs/06-backlog.md` оновлено (статус + commit hash)
 - [ ] `docs/STATE.md` оновлено
+
+### Структура E2E тестів
+
+- `tests/e2e/T-XXX-<name>.spec.js` — один файл на задачу
+- Кожен spec збирає screenshot у `docs/screenshots/T-XXX-<name>.png` (саме коміту у git — це evidence)
+- Console filter whitelist: `/GL Driver Message/i`, `/React DevTools/i` (headless noise)
+- Spec test names мають бути зрозумілими — вони зʼявляться у PO Report
 
 ## 🚨 Budget caps (autonomous safety)
 
