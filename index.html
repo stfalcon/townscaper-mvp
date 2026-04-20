@@ -5,35 +5,70 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Cozy Town Builder</title>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: system-ui, -apple-system, sans-serif;
-      background: linear-gradient(to bottom, #C8E0ED 0%, #F0E8DA 100%);
-      min-height: 100vh;
-      display: flex;
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      height: 100%;
+      background: #C8E0ED;
+      font-family: 'Nunito', system-ui, -apple-system, sans-serif;
+    }
+    #canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      outline: none;
+    }
+    #canvas:focus-visible {
+      outline: 3px solid #2A2520;
+      outline-offset: -3px;
+    }
+    #no-webgl {
+      display: none;
+      position: fixed;
+      inset: 0;
       align-items: center;
       justify-content: center;
-      color: #2A2520;
-    }
-    .placeholder {
       text-align: center;
       padding: 2rem;
+      color: #2A2520;
     }
-    .placeholder h1 {
-      font-size: 2rem;
-      margin-bottom: 0.5rem;
-      font-weight: 700;
-    }
-    .placeholder p {
-      font-size: 1.125rem;
-      opacity: 0.7;
-    }
+    #no-webgl.show { display: flex; }
   </style>
+
+  <script async src="https://cdn.jsdelivr.net/npm/es-module-shims@1.10.0/dist/es-module-shims.js"></script>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
 </head>
 <body>
-  <div class="placeholder">
-    <h1>🏗️ Cozy Town Builder</h1>
-    <p>Гра будується. Перша задача — T-001: додати зелене поле і небо.</p>
+  <canvas id="canvas" tabindex="0"></canvas>
+
+  <div id="no-webgl">
+    <div>
+      <h1>🌐 Ой!</h1>
+      <p>Твоєму браузеру потрібно оновлення.<br>Гра використовує WebGL2.</p>
+    </div>
   </div>
+
+  <script>
+    // WebGL2 detection (before module loading)
+    try {
+      const testCanvas = document.createElement('canvas');
+      if (!testCanvas.getContext('webgl2')) {
+        document.getElementById('no-webgl').classList.add('show');
+      }
+    } catch (e) {
+      document.getElementById('no-webgl').classList.add('show');
+    }
+  </script>
+
+  <script type="module" src="./src/main.js"></script>
 </body>
 </html>
