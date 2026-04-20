@@ -134,7 +134,10 @@ export class UI {
   }
 
   setMode(mode) {
-    if (this.input) this.input.mode = mode;
+    if (this.input) {
+      this.input.mode = mode;
+      this.input.refreshHover?.(); // repaint outline (cube vs placement target)
+    }
     for (const [m, btn] of this._modeButtons) {
       btn.dataset.selected = (m === mode) ? 'true' : 'false';
     }
