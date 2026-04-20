@@ -4,7 +4,7 @@
 
 ## Остання сесія
 **Дата:** 2026-04-20
-**Що зроблено:** T-013 завершено — Save/Load з edge cases. Гра ПЕРЕЖИВАЄ F5. Debounced 2с, quota error → toast, Safari private → banner + in-memory, corrupt JSON → silent clear. 122 unit + 56 E2E.
+**Що зроднено:** T-012 завершено — mode toggle (Build/Erase) з SVG-іконками, progressive disclosure (зʼявляється після 1-го placement), erase-no-op toast + auto-switch після 3 no-ops для 7-річки. Плюс fix/horizontal-gaps. 122 unit + 65 E2E.
 
 ## Поточний стан
 - 🟢 Infra: repo + CI (3 джоби: test + e2e + deploy) + Pages + branch protection (required: Unit tests + E2E)
@@ -21,21 +21,23 @@
 - 🟢 **hotfix tile-vertical-gaps:** stacked cells touch правильно
 - 🟢 **T-011 Done:** палітра UI + клавіші 1-6 + Surprise unlock
 - 🟢 **T-013 Done:** Save/Load + debounce + quota/private/corrupt handling
-- 🟢 Tests: 122 unit + 56 E2E
-- 🔴 Далі — варіанти: T-012 (mode toggle UI), T-014 (place/remove tweens), T-016 (Random City), T-018 (onboarding)
+- 🟢 **fix/horizontal-gaps:** freestanding/corner геометрії повернуто до 1×1×1
+- 🟢 **T-012 Done:** mode toggle UI, progressive disclosure, erase-feedback
+- 🟢 Tests: 122 unit + 65 E2E
+- 🔴 Далі — T-016 (Random City wow-момент), T-014 (juice), T-018 (onboarding)
 
 ## Deploy URL
 **https://stfalcon.github.io/townscaper-mvp/**
-Last deploy: 2026-04-20, T-013 merge (commit `74c5bad`). **Гра переживає F5.** Вся прогресія персистується.
+Last deploy: 2026-04-20, T-012 merge (commit `6a5c3f7`). **7-річка тепер точно дасть раду — Build/Erase toggle + anti-silent-failure.**
 
 ## Наступна задача — вибір user
 
 **A. T-016 Random City** (2h) — клавіша R → BFS-генератор 30-60 будинків з cascade-анімацією. Wow-момент для 12-річки.
-**B. T-014 Place/Remove анімації** (2h) — scale-in bounce при placement, scale-out при remove, використовує існуючий TweenManager.
-**C. T-012 Mode toggle** (1h) — Build/Erase кнопки у top-right для 7-річки яка не має ПКМ.
-**D. T-018 Onboarding** (1h) — SVG arrow + «Тикни — побудуй!» при першому запуску для 7-річки.
+**B. T-014 Place/Remove анімації** (2h) — scale-in bounce при placement, scale-out при remove. Juice.
+**C. T-018 Onboarding** (1h) — SVG arrow + «Тикни — побудуй!» при першому запуску для 7-річки.
+**D. T-017 Clear all** (1h) — hold-to-confirm клавіша `C` для скидання всього.
 
-Рекомендую **T-016 Random City** — це головний wow-момент з Vision; після нього 12-річка одразу в захваті. І воно ДОЗВОЛИТЬ мені тестувати стрес-сценарії (20+ concurrent tweens коли буде T-014).
+Рекомендую **T-016 Random City** — головний wow-момент (критерій у Vision). Після нього — T-014 (анімації) покращить feel у Random City теж.
 
 ## Blockers
 Немає. Очікую «ок» від user.
@@ -58,6 +60,8 @@ Last deploy: 2026-04-20, T-013 merge (commit `74c5bad`). **Гра пережив
 | fix/gaps | ✅ Done | `f1cbe98` (PR #11) | 2026-04-20 |
 | T-011 | ✅ Done | `3af703a` (PR #12) | 2026-04-20 |
 | T-013 | ✅ Done | `74c5bad` (PR #13) | 2026-04-20 |
+| fix/horiz | ✅ Done | `7b6fc16` (PR #14) | 2026-04-20 |
+| T-012 | ✅ Done | `6a5c3f7` (PR #15) | 2026-04-20 |
 
 ## Notes
 - Node 20 deprecation warning у Actions (non-blocking, fix до червня 2026)

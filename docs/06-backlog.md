@@ -230,7 +230,7 @@
 
 ---
 
-#### T-012: Mode toggle + progressive disclosure + erase toast
+#### T-012: Mode toggle + progressive disclosure + erase toast ✅ **Done** (PR #15, `6a5c3f7`)
 **Epic:** E4 | **Estimate:** 2h | **Priority:** P1 | **Dependencies:** T-011, T-007
 
 **Опис:** Два buttons (Build/Erase) у top-right. **Прихований до першого placement**. Erase-mode: ЛКМ на порожню клітинку → toast «Ти стираєш 🧽» + button shake. Після 3 no-op кліків — auto-switch назад у Build.
