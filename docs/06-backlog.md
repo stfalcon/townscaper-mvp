@@ -57,7 +57,7 @@
 
 ---
 
-#### T-002: GameState модуль + canPlace + unit тести
+#### T-002: GameState модуль + canPlace + unit тести ✅ **Done** (PR #3, `b9f5d5c`)
 **Epic:** E1 | **Estimate:** 4h | **Priority:** P0 | **Dependencies:** —
 
 **Опис:** `GameState` з priority-based event bus (not native EventTarget). API: `getCell`, `canPlace`, `setCell`, `removeCell`, `updateTile`, `getNeighbors`, `all`, `clear`, `toJSON`, `fromJSON`, `on(event, fn, priority)`. Immutable cells (spread on mutate). Повний unit-test suite.
