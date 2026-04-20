@@ -26,24 +26,26 @@ test.describe('T-005: 4-pool InstancedMesh renders cells', () => {
     await page.waitForSelector('canvas#canvas');
     await page.waitForTimeout(300);
 
-    const sequence = await page.evaluate(() => {
-      const { state, renderer } = window.__game__;
-      const snaps = [];
-      state.setCell(10, 0, 10, { colorId: 1 });
-      snaps.push({ after: 'base', ...renderer.getPoolStats() });
-      state.setCell(10, 1, 10, { colorId: 1 });
-      snaps.push({ after: 'stack', ...renderer.getPoolStats() });
-      state.removeCell(10, 1, 10);
-      snaps.push({ after: 'unstack', ...renderer.getPoolStats() });
-      return snaps;
-    });
+    // Scale-out tween (T-014) is async: removed cells stay in their pool
+    // until the shrink completes. Wait between mutations to see the final
+    // allocation state.
+    const sleep = (ms) => page.waitForTimeout(ms);
 
-    // base: 1 cell, tileType=roof
-    expect(sequence[0]).toMatchObject({ total: 1, roof: 1 });
-    // stack: upper=roof, lower=freestanding (has above, 0 horizontal)
-    expect(sequence[1]).toMatchObject({ total: 2, roof: 1, freestanding: 1 });
-    // unstack: lower migrates back to roof
-    expect(sequence[2]).toMatchObject({ total: 1, roof: 1, freestanding: 0 });
+    await page.evaluate(() => window.__game__.state.setCell(10, 0, 10, { colorId: 1 }));
+    await sleep(50);
+    const base = await page.evaluate(() => window.__game__.renderer.getPoolStats());
+
+    await page.evaluate(() => window.__game__.state.setCell(10, 1, 10, { colorId: 1 }));
+    await sleep(50);
+    const stack = await page.evaluate(() => window.__game__.renderer.getPoolStats());
+
+    await page.evaluate(() => window.__game__.state.removeCell(10, 1, 10));
+    await sleep(250); // 150ms remove tween + margin
+    const unstack = await page.evaluate(() => window.__game__.renderer.getPoolStats());
+
+    expect(base).toMatchObject({ total: 1, roof: 1 });
+    expect(stack).toMatchObject({ total: 2, roof: 1, freestanding: 1 });
+    expect(unstack).toMatchObject({ total: 1, roof: 1, freestanding: 0 });
   });
 
   test('500-cell dev spawn renders without lag (FPS guard)', async ({ page }) => {
