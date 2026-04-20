@@ -114,6 +114,7 @@ export class Renderer {
     this.#setupLights();
     this.#setupGround();
     this.#setupPools();
+    this.#setupHover();
 
     this.webgl = new THREE.WebGLRenderer({
       canvas, antialias: true, powerPreference: 'high-performance',
@@ -175,6 +176,31 @@ export class Renderer {
       this.pools[tileType] = pool;
       this.scene.add(pool.mesh);
     }
+  }
+
+  #setupHover() {
+    const geo = new THREE.BoxGeometry(1.04, 1.04, 1.04);
+    const mat = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.5,
+      wireframe: true,
+      depthTest: false,
+    });
+    this.hoverMesh = new THREE.Mesh(geo, mat);
+    this.hoverMesh.visible = false;
+    this.hoverMesh.renderOrder = 100;
+    this.scene.add(this.hoverMesh);
+  }
+
+  setHover(coord) {
+    if (!coord) {
+      this.hoverMesh.visible = false;
+      return;
+    }
+    this.hoverMesh.position.set(coord.x + 0.5, coord.y + 0.5, coord.z + 0.5);
+    this.hoverMesh.material.color.setHex(coord.valid === false ? 0xff4444 : 0xffffff);
+    this.hoverMesh.visible = true;
   }
 
   #wireState() {

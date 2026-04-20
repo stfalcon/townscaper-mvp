@@ -1,6 +1,7 @@
 import { GameState } from './gameState.js';
 import { TileResolver } from './tileResolver.js';
 import { Renderer } from './renderer.js';
+import { InputManager } from './input.js';
 import { COLORS, GRID_SIZE, MAX_HEIGHT } from './constants.js';
 
 const canvas = document.getElementById('canvas');
@@ -12,10 +13,11 @@ const params = new URLSearchParams(window.location.search);
 const state = new GameState();
 const resolver = new TileResolver(state);   // priority=1
 const renderer = new Renderer(canvas, state); // priority=2, 3
+const input = new InputManager({ canvas, camera: renderer.camera, state, renderer });
 renderer.start();
 
 // Expose for DevTools inspection (zero-cost — no real API leakage)
-window.__game__ = { state, resolver, renderer };
+window.__game__ = { state, resolver, renderer, input };
 
 // --- Dev helpers ---
 if (params.has('dev')) loadDevTools();
