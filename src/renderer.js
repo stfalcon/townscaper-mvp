@@ -33,19 +33,17 @@ function makeWallGeometry() {
 }
 
 function makeFreestandingGeometry() {
-  // Narrow inset pillar — 0.85×0.9×0.85. Looks different from wall
-  // because horizontal faces recede, suggesting a tower interior.
-  const g = new THREE.BoxGeometry(0.85, 0.9, 0.85);
-  g.translate(0, -0.05, 0); // bottom flush with cell bottom
-  return g;
+  // Narrow inset pillar (0.85×1.0×0.85). Height MUST be 1.0 — otherwise
+  // stacked cells leave a horizontal gap showing the ground between
+  // floors. Differentiation from 'wall' is via XZ-inset only.
+  return new THREE.BoxGeometry(0.85, 1.0, 0.85);
 }
 
 function makeCornerGeometry() {
-  // Slightly taller (1.1) + slightly inset (0.95) — suggests a turn
-  // in the building line.
-  const g = new THREE.BoxGeometry(0.95, 1.1, 0.95);
-  g.translate(0, 0.05, 0);
-  return g;
+  // Slightly inset (0.95×1.0×0.95), full height. Can't be taller than
+  // 1.0 because 'corner' requires hasAbove=true — a taller geometry
+  // would clip into the cell above.
+  return new THREE.BoxGeometry(0.95, 1.0, 0.95);
 }
 
 function makeRoofGeometry() {
