@@ -42,7 +42,7 @@
 
 ### Sprint 1: Infrastructure + Core (~10 год)
 
-#### T-001: Setup + Three.js сцена + import map + shims
+#### T-001: Setup + Three.js сцена + import map + shims ✅ **Done** (PR #1, `3a8d6bc`)
 **Epic:** E1 | **Estimate:** 2h | **Priority:** P0 | **Dependencies:** —
 
 **Опис:** `index.html` з import map (jsdelivr) + `es-module-shims` polyfill. Порожня сцена, ambient+directional+hemisphere lights, ground plane 30×30. `OrthographicCamera` pitch 30°/yaw 45° (dimetric). RAF render loop. `?dev=1` → stats.js overlay.

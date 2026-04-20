@@ -4,41 +4,41 @@
 
 ## Остання сесія
 **Дата:** 2026-04-20
-**Що зроблено:** Infra setup завершено — repo створено, CI + Pages працюють, перший deploy зелений.
+**Що зроблено:** T-001 завершено — перша Three.js сцена задеплоєна. Зелене поле + небо + dimetric камера.
 
 ## Поточний стан
-- 🟢 Docs v2 (7 файлів після cross-review)
-- 🟢 CLAUDE.md у корені
-- 🟢 Git repo: https://github.com/stfalcon/townscaper-mvp (public)
-- 🟢 CI workflow: `.github/workflows/ci.yml` — test + deploy, **зелений**
-- 🟢 Branch protection на main: require «Unit tests» green, no force-push, no deletions
-- 🟢 GitHub Pages: `https://stfalcon.github.io/townscaper-mvp/` (HTTP 200)
-- 🟢 Smoke tests: 2 passing (infrastructure validation)
-- 🔴 Код гри: не починався (наступне — T-001)
+- 🟢 Docs v2 + CLAUDE.md
+- 🟢 Git repo + CI + Pages + branch protection
+- 🟢 **T-001 Done:** Three.js scene з ambient/directional/hemisphere lights, 30×30 ground plane, ortho dimetric camera, RAF loop, WebGL2 detection, stats.js у dev-mode
+- 🟢 Tests: 11 passing (2 smoke + 9 constants)
+- 🔴 T-002 GameState — не розпочато
 
 ## Deploy URL
 **https://stfalcon.github.io/townscaper-mvp/**
-Last deploy: 2026-04-20, initial infra commit (placeholder page).
+Last deploy: 2026-04-20, T-001 merge (commit `3a8d6bc`).
 
 ## Наступна задача
-**T-001: Setup + Three.js сцена + import map + shims** (2h estimate)
+**T-002: GameState модуль + canPlace + unit тести** (4h estimate)
 
-Див. `docs/06-backlog.md` для повних DoD + AC. Коротко:
-- Додати Three.js r160 через jsdelivr + `es-module-shims` у `index.html`
-- Створити `src/main.js`, `src/constants.js`, `src/renderer.js`
-- Порожня сцена: sky-градієнт, ambient + directional + hemisphere lights, ground-plane 30×30
-- Orthographic camera (dimetric 30°, yaw 45°)
-- RAF render loop, `?dev=1` → stats.js overlay
+- `GameState` з priority-based event bus (не native EventTarget)
+- API: getCell, canPlace, setCell, removeCell, updateTile, getNeighbors, all, clear, toJSON, fromJSON
+- canPlace перевіряє: out-of-bounds, occupied, too-high, too-many, no-support
+- Immutable cells (spread on mutate)
+- ≥95% coverage
+
+Після T-002 → T-003 (tileLogic) → T-004 (tileResolver) → T-005 (4 pools).
 
 ## Blockers
-Немає. Очікую «ок» від user після тесту placeholder URL → беру T-001.
+Немає. Очікую «ок» від user після тесту T-001 URL.
 
 ## Історія задач
 
 | T-XXX | Status | Commit | Date |
 |-------|--------|--------|------|
-| infra-setup | ✅ Done | `68a4...` (main) | 2026-04-20 |
+| infra-setup | ✅ Done | `c27dc94`, `adb649b` | 2026-04-20 |
+| T-001 | ✅ Done | `3a8d6bc` (PR #1) | 2026-04-20 |
 
 ## Notes
-- Node 20 deprecation warning у Actions (non-blocking, fix до червня 2026)
-- Playwright + happy-dom поки не встановлені — додамо коли потрібно (T-002 для happy-dom, T-007 для Playwright)
+- Node 20 deprecation warning у Actions (non-blocking)
+- Playwright + happy-dom поки не встановлені — додамо у T-002 (happy-dom) і T-007 (Playwright)
+- Grid helper lines (T-003 у v1 backlog, P2) — пропустив у T-001, зробимо якщо потрібно візуально
