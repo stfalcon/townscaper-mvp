@@ -135,7 +135,7 @@
 
 ---
 
-#### T-007: PointerEvents + Place/Remove з drag-threshold
+#### T-007: PointerEvents + Place/Remove з drag-threshold ✅ **Done** (PR #8, `0cb18c8`)
 **Epic:** E2 | **Estimate:** 3h | **Priority:** P0 | **Dependencies:** T-006, T-002
 
 **Опис:** Pointer Events з day 1: pointerdown/pointermove/pointerup + `setPointerCapture`. Drag vs click: ≤8px, ≤300мс. ЛКМ у Build → setCell. ПКМ → removeCell. Erase-mode: ЛКМ → removeCell. Passive listeners для wheel/touch.

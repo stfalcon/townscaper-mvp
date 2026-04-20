@@ -4,7 +4,7 @@
 
 ## Остання сесія
 **Дата:** 2026-04-20
-**Що зроблено:** T-006 завершено — Math-based picking (DDA) + hover ghost cursor. Курсор тепер «йде» за мишкою по сітці з wireframe-підсвіткою. Червоний для невалідних позицій. 96 unit + 20 E2E.
+**Що зроблено:** T-007 завершено — гра нарешті ГРАБЕЛЬНА МИШКОЮ. ЛКМ ставить, ПКМ стирає. Drag-threshold 8px/300мс проти випадкових дитячих micro-drag. 96 unit + 27 E2E.
 
 ## Поточний стан
 - 🟢 Infra: repo + CI (3 джоби: test + e2e + deploy) + Pages + branch protection (required: Unit tests + E2E)
@@ -15,24 +15,30 @@
 - 🟢 **T-004 Done:** TileResolver (priority=1) + no-op optimization + resolveAll
 - 🟢 **T-005 Done:** 4 InstancedMesh пули + instanceColor + swap-remove + dev spawner
 - 🟢 **T-006 Done:** DDA picking + hover ghost cursor (pointer-driven)
-- 🟢 Tests: 96 unit + 20 E2E
-- 🔴 T-007 — PointerEvents place/remove з drag-threshold (3h)
+- 🟢 **T-007 Done:** ЛКМ place + ПКМ remove + drag-threshold + erase-mode
+- 🟢 Tests: 96 unit + 27 E2E
+- 🔴 Далі — або T-008 (4 різні tile-геометрії) або T-CAM (rotate Q/E + zoom)
 
 ## Deploy URL
 **https://stfalcon.github.io/townscaper-mvp/**
-Last deploy: 2026-04-20, T-006 merge (commit `fa9d692`). **Hover cursor працює** — водиш мишкою, бачиш wireframe-виділення.
+Last deploy: 2026-04-20, T-007 merge (commit `0cb18c8`). **Гра ГРАБЕЛЬНА мишкою.** ЛКМ ставить, ПКМ стирає.
 
-## Наступна задача
-**T-007: PointerEvents + Place/Remove з drag-threshold** (3h estimate)
+## Наступна задача (на вибір user)
 
-- ЛКМ → `state.setCell` з currentColor (поки hardcoded 1)
-- ПКМ → `state.removeCell` + preventDefault на contextmenu
-- Drag detection: ≤8px, ≤300мс → click, інакше ignore
-- Passive:false для wheel (для T-CAM далі)
-- Focus management: tabindex=0, auto-focus на pointerdown
-- AC-F1-01..09, AC-F2-01..03
+**Варіант A — T-008: 4 різні tile-геометрії** (3h)
+- freestanding куб з пірамідальним дашком
+- wall простий куб
+- corner кубик зі скошеним верхнім ребром
+- roof з низькою пірамідою/hipped-roof
+- Y-gradient vertex colors (не baked AO)
+- Silhouette height delta ≥15% між варіантами
 
-Після цього вже можна буде справді грати мишкою. Далі T-008 (4 варіації геометрій) або T-CAM (камера обертання).
+**Варіант B — T-CAM: Камера обертання Q/E + zoom** (2h)
+- Q/E → yaw ±90° snap, 200мс easeInOutCubic
+- Колесо → zoom 0.1 step, clamp 0.5-2.0 + spring-bounce
+- AC-F9-01..04
+
+Обидва дають візуально суттєве покращення. T-008 даje «чому це не просто Minecraft», T-CAM — interactive feel. Рекомендую T-CAM першим — після нього я зможу протестувати picking під різними кутами у T-008.
 
 ## Blockers
 Немає. Очікую «ок» від user.
@@ -49,6 +55,7 @@ Last deploy: 2026-04-20, T-006 merge (commit `fa9d692`). **Hover cursor прац
 | T-004 | ✅ Done | `85737bc` (PR #5) | 2026-04-20 |
 | T-005 | ✅ Done | `6ad6bdc` (PR #6) | 2026-04-20 |
 | T-006 | ✅ Done | `fa9d692` (PR #7) | 2026-04-20 |
+| T-007 | ✅ Done | `0cb18c8` (PR #8) | 2026-04-20 |
 
 ## Notes
 - Node 20 deprecation warning у Actions (non-blocking, fix до червня 2026)
