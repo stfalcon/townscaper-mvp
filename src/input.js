@@ -31,6 +31,9 @@ export class InputManager {
     this._raycaster = new THREE.Raycaster();
     this._pointer = new THREE.Vector2();
     this._lastHoverKey = null;
+    this._lastHoverMode = null;
+    this._lastPointerX = null;
+    this._lastPointerY = null;
     this._pointerDown = null;
 
     this._onMove = this._onMove.bind(this);
@@ -79,22 +82,54 @@ export class InputManager {
   }
 
   _onMove(e) {
+    this._lastPointerX = e.clientX;
+    this._lastPointerY = e.clientY;
     const hit = this.pick(e.clientX, e.clientY);
     this._applyHover(hit);
   }
 
+  /**
+   * Re-evaluate hover at the last known pointer position. Called when mode
+   * changes (Build↔Erase) — the coord we highlight switches from placement
+   * target to the cube-being-erased, so a stale cache must be invalidated.
+   */
+  refreshHover() {
+    if (this._lastPointerX == null) return;
+    this._lastHoverKey = null;
+    this._lastHoverMode = null;
+    const hit = this.pick(this._lastPointerX, this._lastPointerY);
+    this._applyHover(hit);
+  }
+
   _applyHover(hit) {
-    if (!hit || !hit.placementCoord) {
+    if (!hit) {
       this._clearHover();
       return;
     }
-    const c = hit.placementCoord;
-    const key = `${c.x}_${c.y}_${c.z}`;
-    if (key === this._lastHoverKey) return;
+
+    let coord;
+    let valid;
+    let color;
+    if (this.mode === 'erase') {
+      // Highlight the CUBE we'd remove. Over empty ground — hide outline
+      // (no feedback = nothing to erase here).
+      if (!hit.hitCell) { this._clearHover(); return; }
+      coord = hit.hitCell;
+      valid = false; // always red in erase mode
+      color = 0xff4444;
+    } else {
+      // Build mode: highlight where a new cell would go.
+      if (!hit.placementCoord) { this._clearHover(); return; }
+      coord = hit.placementCoord;
+      valid = this.state.canPlace(coord.x, coord.y, coord.z).ok;
+      color = COLOR_BY_ID[this.currentColorId] ?? 0xffffff;
+    }
+
+    const key = `${coord.x}_${coord.y}_${coord.z}`;
+    if (key === this._lastHoverKey && this._lastHoverMode === this.mode) return;
     this._lastHoverKey = key;
-    const valid = this.state.canPlace(c.x, c.y, c.z).ok;
-    const color = COLOR_BY_ID[this.currentColorId] ?? 0xffffff;
-    this.renderer.setHover({ ...c, valid, color });
+    this._lastHoverMode = this.mode;
+    this.renderer.setHover({ ...coord, valid, color });
   }
 
   _onLeave() {
@@ -104,6 +139,7 @@ export class InputManager {
   _clearHover() {
     if (this._lastHoverKey === null) return;
     this._lastHoverKey = null;
+    this._lastHoverMode = null;
     this.renderer.setHover(null);
   }
 
