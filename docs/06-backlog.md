@@ -152,7 +152,7 @@
 
 ### Sprint 3: Tile variations + Camera (~10 год)
 
-#### T-008: 4 tile-геометрії з Y-gradient vertex colors
+#### T-008: 4 tile-геометрії з Y-gradient vertex colors ✅ **Done** (PR #10, `006db2b`)
 **Epic:** E3 | **Estimate:** 3h | **Priority:** P1 | **Dependencies:** T-005
 
 **Опис:** Процедурно згенерувати 4 геометрії:

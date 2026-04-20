@@ -4,7 +4,7 @@
 
 ## Остання сесія
 **Дата:** 2026-04-20
-**Що зроблено:** T-CAM завершено — Q/E обертає, колесо зумить. TweenManager введено (буде переіспользован у T-014). Picking працює під будь-яким кутом (регресійний тест). 107 unit + 35 E2E.
+**Що зроблено:** T-008 завершено — 4 різні геометрії (wall / freestanding / corner / roof). Roof має pyramidalдашок (merged Box + Cone). Delta 30%. 107 unit + 39 E2E.
 
 ## Поточний стан
 - 🟢 Infra: repo + CI (3 джоби: test + e2e + deploy) + Pages + branch protection (required: Unit tests + E2E)
@@ -17,23 +17,25 @@
 - 🟢 **T-006 Done:** DDA picking + hover ghost cursor (pointer-driven)
 - 🟢 **T-007 Done:** ЛКМ place + ПКМ remove + drag-threshold + erase-mode
 - 🟢 **T-CAM Done:** Q/E rotate + wheel zoom + TweenManager
-- 🟢 Tests: 107 unit + 35 E2E
-- 🔴 T-008 — 4 різні tile-геометрії (3h)
+- 🟢 **T-008 Done:** 4 silhouette-distinct geometries (30% height delta)
+- 🟢 Tests: 107 unit + 39 E2E
+- 🔴 T-009 — Renderer listens cellResolved + migration animations (2h)
 
 ## Deploy URL
 **https://stfalcon.github.io/townscaper-mvp/**
-Last deploy: 2026-04-20, T-CAM merge (commit `c125a59`). **Камера обертається і зумиться.** Можна подивитись на сцену з різних боків.
+Last deploy: 2026-04-20, T-008 merge (commit `006db2b`). **Будинки мають різні силуети.** Roof — з пірамідою, freestanding — вужчий, corner — вищий.
 
 ## Наступна задача
-**T-008: 4 різні tile-геометрії** (3h)
-- freestanding: кубик з пірамідальним дашком
-- wall: простий кубик (як зараз)
-- corner: кубик зі скошеним верхнім ребром
-- roof: кубик з низькою пірамідою
-- Y-gradient vertex colors (замість baked AO — дешева оптимізація)
-- Silhouette height delta ≥15% між варіантами
 
-Після T-008 будинки виглядатимуть «не Minecraft».
+Варіанти:
+
+**A. T-009 (2h)** — Renderer migration animations без flicker (вже працює, але формалізувати)
+
+**B. T-011 (3h)** — UI палітра з SVG-іконками (діти зможуть вибирати кольори без DevTools)
+
+**C. T-013 (4h)** — Save/Load з edge cases (гра відновлюється після F5)
+
+Рекомендую **T-013 Save/Load** — ключова фіча (одна з success criteria у Vision). Після неї гра «справжня» — побудував щось, закрив вкладку, відкрив — місто на місці.
 
 ## Blockers
 Немає. Очікую «ок» від user.
@@ -52,6 +54,7 @@ Last deploy: 2026-04-20, T-CAM merge (commit `c125a59`). **Камера обер
 | T-006 | ✅ Done | `fa9d692` (PR #7) | 2026-04-20 |
 | T-007 | ✅ Done | `0cb18c8` (PR #8) | 2026-04-20 |
 | T-CAM | ✅ Done | `c125a59` (PR #9) | 2026-04-20 |
+| T-008 | ✅ Done | `006db2b` (PR #10) | 2026-04-20 |
 
 ## Notes
 - Node 20 deprecation warning у Actions (non-blocking, fix до червня 2026)
