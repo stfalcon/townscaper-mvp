@@ -104,7 +104,7 @@
 
 ### Sprint 2: InstanceColor pools + Math picking (~12 год)
 
-#### T-005: 4-пульні InstancedMesh + instanceColor
+#### T-005: 4-пульні InstancedMesh + instanceColor ✅ **Done** (PR #6, `6ad6bdc`)
 **Epic:** E1 | **Estimate:** 6h | **Priority:** P0 | **Dependencies:** T-001
 
 **Опис:** Створити 4 `InstancedMesh` пули (один на tileType). Колір — через `InstancedBufferAttribute('instanceColor', 3)`. `MeshLambertMaterial({ vertexColors: true })`. Swap-remove allocate/free. `setCellColor(cellKey, rgb)` для color change без міграції. `computeBoundingSphere()` після batch placement.

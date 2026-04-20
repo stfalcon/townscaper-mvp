@@ -4,7 +4,7 @@
 
 ## Остання сесія
 **Дата:** 2026-04-20
-**Що зроблено:** T-004 завершено — TileResolver модуль, priority-based orchestrator re-tile з no-op optimization і resolveAll для post-load. 86 unit + 11 E2E, coverage 100%.
+**Що зроблено:** T-005 завершено — 4-пульний InstancedMesh з instanceColor. ПЕРШИЙ візуальний результат: кубики реально зʼявляються на сцені. Зловили і виправили баг чорних кубиків (vertexColors:true vs instanceColor).
 
 ## Поточний стан
 - 🟢 Infra: repo + CI (3 джоби: test + e2e + deploy) + Pages + branch protection (required: Unit tests + E2E)
@@ -13,24 +13,24 @@
 - 🟢 **T-002 Done:** GameState модуль з повним API з TDD §3.2
 - 🟢 **T-003 Done:** pure resolveTile + 10-case data-driven test
 - 🟢 **T-004 Done:** TileResolver (priority=1) + no-op optimization + resolveAll
-- 🟢 Tests: 86 unit (100% coverage) + 11 E2E
-- 🔴 T-005 — 4-pool InstancedMesh + instanceColor (6h, найбільша задача рендеру)
+- 🟢 **T-005 Done:** 4 InstancedMesh пули + instanceColor + swap-remove + dev spawner
+- 🟢 Tests: 86 unit (100% coverage) + 16 E2E (11 existing + 5 нові для T-005)
+- 🔴 T-006 — math-based picking (DDA) + ghost cursor (5h)
 
 ## Deploy URL
 **https://stfalcon.github.io/townscaper-mvp/**
-Last deploy: 2026-04-20, T-004 merge (commit `85737bc`). Візуально ідентично T-001 — логіка (state + resolver) готова, рендер ще не wired.
+Last deploy: 2026-04-20, T-005 merge (commit `6ad6bdc`). **Вперше видно voxel-сцену.** Через `?spawn=500` генерується кластер кольорових кубиків.
 
 ## Наступна задача
-**T-005: 4-пульні InstancedMesh + instanceColor** (6h estimate)
+**T-006: Math-based picking (DDA) + ghost cursor** (5h estimate)
 
-- 4 `InstancedMesh` пули (по одному на tileType), не 20
-- Колір через `InstancedBufferAttribute('instanceColor', 3)` + `MeshLambertMaterial({vertexColors: true})`
-- Swap-remove allocate/free instanceId
-- Setup `mesh.computeBoundingSphere()` для frustum culling
-- Dev spawner `?dev=1&spawn=500` для measurement FPS
-- DoD: 60 FPS @ 500 cells на M1
+- `pick(pointer)` через Amanatides-Woo DDA (TDD §5.2) — raycast тільки по ground plane, далі walk через voxel grid з `state.getCell()`
+- Повертає `{ hitCell, placementCoord, face }`
+- Ghost cursor (hover-outline mesh) у coord-місці, колір = currentColor (з палітри) для valid, червоний для `canPlace.ok=false`
+- Unit test `pick()` на 20 напрямків камери × cell конфігурацій
+- NF-1.10: <0.2мс незалежно від кількості cells
 
-Це найбільша задача — після неї буде ВИДНО кубики на сцені (хоч без кліку ще).
+Потім T-007 (Place/Remove з drag-threshold) — після цього вже можна буде клікати мишкою.
 
 ## Blockers
 Немає. Очікую «ок» від user.
@@ -45,6 +45,7 @@ Last deploy: 2026-04-20, T-004 merge (commit `85737bc`). Візуально ід
 | T-002 | ✅ Done | `b9f5d5c` (PR #3) | 2026-04-20 |
 | T-003 | ✅ Done | `a80c12f` (PR #4) | 2026-04-20 |
 | T-004 | ✅ Done | `85737bc` (PR #5) | 2026-04-20 |
+| T-005 | ✅ Done | `6ad6bdc` (PR #6) | 2026-04-20 |
 
 ## Notes
 - Node 20 deprecation warning у Actions (non-blocking, fix до червня 2026)
