@@ -25,6 +25,9 @@ export class InputManager {
     this.currentColorId = 1;
     this.mode = 'build'; // 'build' | 'erase'
 
+    /** Callback: fires when LMB in erase-mode targets nothing to remove. */
+    this.onEraseNoop = null;
+
     this._raycaster = new THREE.Raycaster();
     this._pointer = new THREE.Vector2();
     this._lastHoverKey = null;
@@ -135,7 +138,7 @@ export class InputManager {
     if (!hit) return;
 
     const isRemove = down.button === 2 || this.mode === 'erase';
-    if (isRemove) this._doRemove(hit);
+    if (isRemove) this._doRemove(hit, e.clientX, e.clientY);
     else this._doPlace(hit);
 
     // After mutation, refresh hover for the same pointer position
@@ -150,8 +153,13 @@ export class InputManager {
     this.state.setCell(c.x, c.y, c.z, { colorId: this.currentColorId });
   }
 
-  _doRemove(hit) {
-    if (!hit.hitCell) return;
+  _doRemove(hit, clientX, clientY) {
+    if (!hit.hitCell) {
+      // LMB in erase mode on empty ground — signal UI for feedback.
+      // RMB on empty is silent (no feedback needed in build mode).
+      if (this.mode === 'erase') this.onEraseNoop?.({ clientX, clientY });
+      return;
+    }
     const { x, y, z } = hit.hitCell;
     this.state.removeCell(x, y, z);
   }

@@ -2,6 +2,7 @@ import { COLORS } from './constants.js';
 
 const SURPRISE_UNLOCK_THRESHOLD = 10;
 const SURPRISE_COLOR_ID = 6;
+const ERASE_AUTOSWITCH_THRESHOLD = 3; // 3 no-op erase clicks → back to build
 
 /**
  * DOM palette: renders 5+1 color buttons, handles selection, keyboard
@@ -10,24 +11,40 @@ const SURPRISE_COLOR_ID = 6;
  * Not aware of Three.js — only mutates `input.currentColorId`.
  */
 export class UI {
-  constructor({ state, input, paletteEl }) {
+  constructor({ state, input, paletteEl, modeToggleEl }) {
     this.state = state;
     this.input = input;
     this.paletteEl = paletteEl ?? document.getElementById('palette');
     if (!this.paletteEl) throw new Error('Palette element #palette not found');
+    this.modeToggleEl = modeToggleEl ?? document.getElementById('mode-toggle');
 
     this._buttons = new Map(); // colorId → button element
+    this._modeButtons = new Map(); // mode → button element
     this._placementsCount = 0;
     this._surpriseUnlocked = false;
+    this._noopEraseCount = 0;
 
     this._onKeyDown = this._onKeyDown.bind(this);
     this._onPaletteClick = this._onPaletteClick.bind(this);
+    this._onModeClick = this._onModeClick.bind(this);
     this._onCellChanged = this._onCellChanged.bind(this);
 
     this.#renderPalette();
+    this.#wireModeToggle();
     this.paletteEl.addEventListener('click', this._onPaletteClick);
     window.addEventListener('keydown', this._onKeyDown);
     state.on('cellChanged', this._onCellChanged, 5);
+
+    // Subscribe to erase no-ops from input for feedback (toast + shake + auto-switch)
+    if (this.input) this.input.onEraseNoop = (e) => this._handleEraseNoop(e);
+  }
+
+  #wireModeToggle() {
+    if (!this.modeToggleEl) return;
+    for (const btn of this.modeToggleEl.querySelectorAll('.mode-btn')) {
+      this._modeButtons.set(btn.dataset.mode, btn);
+    }
+    this.modeToggleEl.addEventListener('click', this._onModeClick);
   }
 
   #renderPalette() {
@@ -91,14 +108,68 @@ export class UI {
   }
 
   _onCellChanged({ op }) {
-    if (op !== 'add') return;
-    this._placementsCount++;
-    if (
-      !this._surpriseUnlocked &&
-      this._placementsCount >= SURPRISE_UNLOCK_THRESHOLD
-    ) {
-      this.#unlockSurprise();
+    if (op === 'add') {
+      this._placementsCount++;
+      if (this._placementsCount === 1 && this.modeToggleEl) {
+        // Progressive disclosure: mode toggle appears after the first placement
+        this.modeToggleEl.hidden = false;
+      }
+      if (
+        !this._surpriseUnlocked &&
+        this._placementsCount >= SURPRISE_UNLOCK_THRESHOLD
+      ) {
+        this.#unlockSurprise();
+      }
+    } else if (op === 'remove' && this.input?.mode === 'erase') {
+      // Successful erase — reset the no-op counter so user can keep erasing.
+      this._noopEraseCount = 0;
     }
+  }
+
+  _onModeClick(e) {
+    const btn = e.target.closest('.mode-btn');
+    if (!btn) return;
+    const mode = btn.dataset.mode;
+    if (mode === 'build' || mode === 'erase') this.setMode(mode);
+  }
+
+  setMode(mode) {
+    if (this.input) this.input.mode = mode;
+    for (const [m, btn] of this._modeButtons) {
+      btn.dataset.selected = (m === mode) ? 'true' : 'false';
+    }
+    this._noopEraseCount = 0;
+  }
+
+  _handleEraseNoop(eventPos) {
+    this._noopEraseCount++;
+    this.#shakeModeButton('erase');
+    this.#spawnCursorToast('Ти стираєш 🧽', eventPos);
+    if (this._noopEraseCount >= ERASE_AUTOSWITCH_THRESHOLD) {
+      this.setMode('build');
+      // setMode resets counter to 0 — followup toast for context
+      this.#spawnCursorToast('Будуємо далі!', eventPos);
+    }
+  }
+
+  #shakeModeButton(mode) {
+    const btn = this._modeButtons.get(mode);
+    if (!btn) return;
+    btn.classList.remove('shaking');
+    void btn.offsetWidth; // restart animation
+    btn.classList.add('shaking');
+    setTimeout(() => btn.classList.remove('shaking'), 340);
+  }
+
+  #spawnCursorToast(message, eventPos) {
+    if (typeof document === 'undefined' || !eventPos) return;
+    const el = document.createElement('div');
+    el.className = 'toast-cursor';
+    el.textContent = message;
+    el.style.left = `${eventPos.clientX}px`;
+    el.style.top = `${eventPos.clientY}px`;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 1100);
   }
 
   #unlockSurprise() {
@@ -131,6 +202,10 @@ export class UI {
   restoreSnapshot(snap) {
     if (!snap) return;
     this._placementsCount = snap.placementsCount ?? 0;
+    if (this._placementsCount > 0 && this.modeToggleEl) {
+      // Progressive disclosure already earned — show the toggle on load.
+      this.modeToggleEl.hidden = false;
+    }
     if (snap.surpriseUnlocked && !this._surpriseUnlocked) {
       this._surpriseUnlocked = true;
       const btn = this._buttons.get(SURPRISE_COLOR_ID);
