@@ -107,6 +107,59 @@ test.describe('T-008: 4 distinct tile geometries', () => {
     await page.screenshot({ path: 'docs/screenshots/T-008-geometries.png' });
   });
 
+  test('visual snapshot: close-up tower proves no vertical gaps', async ({ page }) => {
+    mkdirSync('docs/screenshots', { recursive: true });
+    await page.goto('/');
+    await page.waitForSelector('canvas#canvas');
+    await page.waitForTimeout(200);
+
+    await page.evaluate(() => {
+      const s = window.__game__.state;
+      s.setCell(15, 0, 15, { colorId: 2 });
+      s.setCell(15, 1, 15, { colorId: 2 });
+      s.setCell(15, 2, 15, { colorId: 2 });
+    });
+
+    // Zoom in for close-up
+    await page.mouse.move(600, 400);
+    for (let i = 0; i < 8; i++) {
+      await page.mouse.wheel(0, -100);
+      await page.waitForTimeout(30);
+    }
+    await page.waitForTimeout(400);
+    await page.mouse.move(5, 5); // away from canvas → hide hover
+    await page.waitForTimeout(200);
+    await page.screenshot({ path: 'docs/screenshots/T-008-tower-closeup.png' });
+  });
+
+  test('stacked non-roof cells have NO vertical gap (regression for fix/tile-vertical-gaps)', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForSelector('canvas#canvas');
+    await page.waitForTimeout(200);
+
+    // Any non-roof geometry (wall, freestanding, corner) must reach full
+    // cell height on Y — otherwise stacked cells show a gap to ground.
+    const heights = await page.evaluate(() => {
+      const r = window.__game__.renderer;
+      const out = {};
+      for (const [tileType, pool] of Object.entries(r.pools)) {
+        pool.mesh.geometry.computeBoundingBox();
+        const bb = pool.mesh.geometry.boundingBox;
+        out[tileType] = { minY: bb.min.y, maxY: bb.max.y, height: bb.max.y - bb.min.y };
+      }
+      return out;
+    });
+
+    for (const tileType of ['wall', 'freestanding', 'corner']) {
+      // Geometry is centered on origin → must span exactly [-0.5, +0.5] on Y
+      expect(heights[tileType].minY).toBeCloseTo(-0.5, 5);
+      expect(heights[tileType].maxY).toBeGreaterThanOrEqual(0.5 - 0.001);
+    }
+    // Roof allowed to protrude up (apex above cell top) — cell above is empty by invariant.
+    expect(heights.roof.minY).toBeCloseTo(-0.5, 5);
+    expect(heights.roof.maxY).toBeGreaterThan(0.5); // protrudes above
+  });
+
   test('placement still works with tall roof geometry (regression)', async ({ page }) => {
     await page.goto('/');
     await page.waitForSelector('canvas#canvas');
