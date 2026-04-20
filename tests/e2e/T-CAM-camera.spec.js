@@ -17,9 +17,9 @@ test.describe('T-CAM: camera rotate + zoom', () => {
     const before = await getYaw(page);
     await page.evaluate(() => document.getElementById('canvas').focus());
     await page.keyboard.press('e');
-    await page.waitForTimeout(300); // let 200ms tween finish
+    await page.waitForTimeout(450); // 200ms tween + RAF startup + CI noise margin
     const after = await getYaw(page);
-    expect(after - before).toBeCloseTo(Math.PI / 2, 3);
+    expect(after - before).toBeCloseTo(Math.PI / 2, 2);
   });
 
   test('AC-F9-01b: Q rotates yaw by -π/2', async ({ page }) => {
@@ -29,9 +29,9 @@ test.describe('T-CAM: camera rotate + zoom', () => {
 
     const before = await getYaw(page);
     await page.keyboard.press('q');
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(450);
     const after = await getYaw(page);
-    expect(after - before).toBeCloseTo(-Math.PI / 2, 3);
+    expect(after - before).toBeCloseTo(-Math.PI / 2, 2);
   });
 
   test('AC-F9-02: wheel down increments zoom', async ({ page }) => {

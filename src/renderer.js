@@ -3,7 +3,7 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import {
   GRID_SIZE, CAMERA, PALETTE, COLORS, TILE_TYPES, MAX_CELLS, ANIM,
 } from './constants.js';
-import { TweenManager, easeInOutCubic, easeOutQuad } from './tween.js';
+import { TweenManager, easeInOutCubic, easeOutQuad, easeOutBack, easeInQuad } from './tween.js';
 
 const ZOOM_MIN = 0.5;
 const ZOOM_MAX = 2.0;
@@ -80,6 +80,8 @@ class InstancePool {
 
     this.slots = new Array(maxInstances).fill(null); // id → cellKey
     this.cellToId = new Map(); // cellKey → id
+    this.scales = new Map();   // cellKey → scaleY (for ongoing tweens)
+    this.cells = new Map();    // cellKey → cell (keeps position for setScale)
     this.dummy = new THREE.Object3D();
     this._tmpMatrix = new THREE.Matrix4();
   }
@@ -88,34 +90,59 @@ class InstancePool {
     return this.cellToId.has(key);
   }
 
-  allocate(cell) {
+  allocate(cell, initialScaleY = 1) {
     const key = cellKey(cell);
     if (this.cellToId.has(key)) return this.cellToId.get(key);
 
     const id = this.mesh.count;
     this.mesh.count = id + 1;
 
-    this.dummy.position.set(cell.x + 0.5, cell.y + 0.5, cell.z + 0.5);
-    this.dummy.scale.set(1, 1, 1);
-    this.dummy.rotation.set(0, 0, 0);
-    this.dummy.updateMatrix();
-    this.mesh.setMatrixAt(id, this.dummy.matrix);
+    this.slots[id] = key;
+    this.cellToId.set(key, id);
+    this.cells.set(key, cell);
+    this.scales.set(key, initialScaleY);
+    this.#writeMatrix(id, cell, initialScaleY);
 
     const [r, g, b] = COLOR_RGB[cell.colorId] ?? [1, 1, 1];
     this.mesh.instanceColor.setXYZ(id, r, g, b);
-
-    this.slots[id] = key;
-    this.cellToId.set(key, id);
 
     this.mesh.instanceMatrix.needsUpdate = true;
     this.mesh.instanceColor.needsUpdate = true;
     return id;
   }
 
+  #writeMatrix(id, cell, scaleY) {
+    // Keep bottom of the mesh flush with cell.y regardless of scale —
+    // all geometries have local bottom at y=-0.5, so world bottom =
+    // position.y - 0.5*scaleY. Solving for position.y to pin bottom at cell.y:
+    const s = Math.max(scaleY, 0.001); // avoid zero-determinant matrix
+    this.dummy.position.set(cell.x + 0.5, cell.y + 0.5 * s, cell.z + 0.5);
+    this.dummy.scale.set(1, s, 1);
+    this.dummy.rotation.set(0, 0, 0);
+    this.dummy.updateMatrix();
+    this.mesh.setMatrixAt(id, this.dummy.matrix);
+  }
+
+  setScale(key, scaleY) {
+    const id = this.cellToId.get(key);
+    if (id === undefined) return;
+    const cell = this.cells.get(key);
+    if (!cell) return;
+    this.scales.set(key, scaleY);
+    this.#writeMatrix(id, cell, scaleY);
+    this.mesh.instanceMatrix.needsUpdate = true;
+  }
+
+  getScale(key) {
+    return this.scales.get(key) ?? 1;
+  }
+
   free(key) {
     const id = this.cellToId.get(key);
     if (id === undefined) return;
     this.cellToId.delete(key);
+    this.cells.delete(key);
+    this.scales.delete(key);
 
     const lastId = this.mesh.count - 1;
     if (id !== lastId) {
@@ -335,12 +362,25 @@ export class Renderer {
           pool.updateColor(key, cell.colorId);
           return;
         }
-        // Migrate: remove from old pool, add to new
+        // Migrate: cancel any active tween, free from old pool, allocate
+        // into target at scale=1 (skip re-tween to avoid "pop-pop" spam
+        // on neighbor additions).
+        this.tweens.cancel(`scale-${key}`);
         pool.free(key);
-        break;
+        targetPool.allocate(cell, 1);
+        return;
       }
     }
-    targetPool.allocate(cell);
+
+    // Fresh cell — allocate at scale 0 and tween up with bounce.
+    targetPool.allocate(cell, 0);
+    this.tweens.start(`scale-${key}`, {
+      from: 0,
+      to: 1,
+      duration: ANIM.place,
+      easing: easeOutBack,
+      onUpdate: (s) => targetPool.setScale(key, s),
+    });
   }
 
   #onCellRemoved(cell) {
@@ -348,7 +388,16 @@ export class Renderer {
     for (const tileType of TILE_TYPES) {
       const pool = this.pools[tileType];
       if (pool.has(key)) {
-        pool.free(key);
+        // Scale-out tween, then free.
+        const from = pool.getScale(key);
+        this.tweens.start(`scale-${key}`, {
+          from,
+          to: 0,
+          duration: ANIM.remove,
+          easing: easeInQuad,
+          onUpdate: (s) => pool.setScale(key, s),
+          onComplete: () => pool.free(key),
+        });
         return;
       }
     }
