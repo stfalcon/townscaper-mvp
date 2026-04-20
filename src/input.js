@@ -32,6 +32,8 @@ export class InputManager {
     this._onLeave = this._onLeave.bind(this);
     this._onDown = this._onDown.bind(this);
     this._onUp = this._onUp.bind(this);
+    this._onKeyDown = this._onKeyDown.bind(this);
+    this._onWheel = this._onWheel.bind(this);
     this._onContextMenu = (e) => e.preventDefault();
 
     canvas.addEventListener('pointermove', this._onMove);
@@ -40,6 +42,27 @@ export class InputManager {
     canvas.addEventListener('pointerup', this._onUp);
     canvas.addEventListener('pointercancel', this._onUp);
     canvas.addEventListener('contextmenu', this._onContextMenu);
+    canvas.addEventListener('wheel', this._onWheel, { passive: false });
+    window.addEventListener('keydown', this._onKeyDown);
+  }
+
+  _onKeyDown(e) {
+    // Don't steal keys from form elements (future UI palette/inputs).
+    if (e.target && e.target.closest?.('button, input, textarea, select')) return;
+    const k = e.key.toLowerCase();
+    if (k === 'q') {
+      this.renderer.rotateCamera('left');
+      e.preventDefault();
+    } else if (k === 'e') {
+      this.renderer.rotateCamera('right');
+      e.preventDefault();
+    }
+  }
+
+  _onWheel(e) {
+    e.preventDefault();
+    const delta = -Math.sign(e.deltaY) * 0.1;
+    if (delta !== 0) this.renderer.zoom(delta);
   }
 
   pick(clientX, clientY) {
@@ -138,5 +161,7 @@ export class InputManager {
     c.removeEventListener('pointerup', this._onUp);
     c.removeEventListener('pointercancel', this._onUp);
     c.removeEventListener('contextmenu', this._onContextMenu);
+    c.removeEventListener('wheel', this._onWheel);
+    window.removeEventListener('keydown', this._onKeyDown);
   }
 }

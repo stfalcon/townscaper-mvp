@@ -1,7 +1,13 @@
 import * as THREE from 'three';
 import {
-  GRID_SIZE, CAMERA, PALETTE, COLORS, TILE_TYPES, MAX_CELLS,
+  GRID_SIZE, CAMERA, PALETTE, COLORS, TILE_TYPES, MAX_CELLS, ANIM,
 } from './constants.js';
+import { TweenManager, easeInOutCubic, easeOutQuad } from './tween.js';
+
+const ZOOM_MIN = 0.5;
+const ZOOM_MAX = 2.0;
+const ZOOM_STEP = 0.1;
+const ZOOM_DURATION = 150;
 
 const COLOR_RGB = Object.fromEntries(
   COLORS.map((c) => [c.id, [
@@ -110,6 +116,10 @@ export class Renderer {
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(PALETTE.skyTop);
 
+    this.yaw = CAMERA.yaw;
+    this.zoomLevel = CAMERA.zoom;
+    this.tweens = new TweenManager();
+
     this.#setupCamera();
     this.#setupLights();
     this.#setupGround();
@@ -134,14 +144,60 @@ export class Renderer {
     this.camera = new THREE.OrthographicCamera(
       -v * aspect, v * aspect, v, -v, 0.1, 1000,
     );
+    this.camera.zoom = this.zoomLevel;
+    this.#updateCameraPosition();
+    this.camera.updateProjectionMatrix();
+  }
+
+  #updateCameraPosition() {
     const d = CAMERA.distance;
     const c = GRID_SIZE / 2;
     this.camera.position.set(
-      c + d * Math.cos(CAMERA.yaw) * Math.cos(CAMERA.pitch),
+      c + d * Math.cos(this.yaw) * Math.cos(CAMERA.pitch),
       d * Math.sin(CAMERA.pitch),
-      c + d * Math.sin(CAMERA.yaw) * Math.cos(CAMERA.pitch),
+      c + d * Math.sin(this.yaw) * Math.cos(CAMERA.pitch),
     );
     this.camera.lookAt(c, 0, c);
+  }
+
+  /**
+   * Snap yaw by ±90° with eased tween. direction: 'left' | 'right'.
+   * Does NOT interrupt in-flight rotation — re-starting the tween keyed by
+   * 'camera-yaw' preserves the visual trajectory.
+   */
+  rotateCamera(direction) {
+    const delta = direction === 'left' ? -Math.PI / 2 : Math.PI / 2;
+    const from = this.yaw;
+    const to = this.yaw + delta;
+    this.tweens.start('camera-yaw', {
+      from, to,
+      duration: ANIM.cameraRotate,
+      easing: easeInOutCubic,
+      onUpdate: (v) => {
+        this.yaw = v;
+        this.#updateCameraPosition();
+      },
+    });
+  }
+
+  /**
+   * Nudge zoom by delta (typically ±0.1). Clamps to [ZOOM_MIN, ZOOM_MAX].
+   * Attempting to scroll past a bound is a no-op (AC-F9-03, AC-F9-04).
+   */
+  zoom(delta) {
+    const target = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, this.zoomLevel + delta));
+    if (target === this.zoomLevel) return;
+    const from = this.camera.zoom;
+    this.zoomLevel = target;
+    this.tweens.start('camera-zoom', {
+      from, to: target,
+      duration: ZOOM_DURATION,
+      easing: easeOutQuad,
+      onUpdate: (v) => {
+        this.camera.zoom = v;
+        this.camera.updateProjectionMatrix();
+      },
+    });
   }
 
   #setupLights() {
@@ -281,13 +337,14 @@ export class Renderer {
     this.webgl.setSize(w, h, false);
   }
 
-  render() {
+  render(now) {
+    this.tweens.tick(now ?? performance.now());
     this.webgl.render(this.scene, this.camera);
   }
 
   start() {
-    const loop = () => {
-      this.render();
+    const loop = (now) => {
+      this.render(now);
       this._rafId = requestAnimationFrame(loop);
     };
     this._rafId = requestAnimationFrame(loop);
