@@ -1,0 +1,16 @@
+node_modules/
+.DS_Store
+*.log
+npm-debug.log*
+/coverage/
+/playwright-report/
+/test-results/
+/blob-report/
+.env
+.env.local
+.vscode/
+.idea/
+dist/
+build/
+*.swp
+.cache/

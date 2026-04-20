@@ -1,0 +1,19 @@
+{
+  "name": "cozy-town-builder",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Townscaper-like sandbox game for kids 7-12, vanilla JS + Three.js",
+  "scripts": {
+    "dev": "npx serve .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  },
+  "devDependencies": {
+    "vitest": "^1.6.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
