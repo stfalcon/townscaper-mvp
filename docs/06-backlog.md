@@ -216,7 +216,7 @@
 
 ### Sprint 4: UI + Save (~9 год)
 
-#### T-011: UI Palette (SVG icons) + Surprise color
+#### T-011: UI Palette (SVG icons) + Surprise color ✅ **Done** (PR #12, `3af703a`)
 **Epic:** E4 | **Estimate:** 3h | **Priority:** P0 | **Dependencies:** T-001
 
 **Опис:** DOM overlay з 5→6 circle-buttons. Inline SVG icons (не emoji). 6-й button fade-in після 10 placements (AC-F12-01). Selection — 3px white outline. Shortcut keys 1-6 (6 доступний після unlock).

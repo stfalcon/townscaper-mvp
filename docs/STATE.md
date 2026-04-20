@@ -4,7 +4,7 @@
 
 ## Остання сесія
 **Дата:** 2026-04-20
-**Що зроблено:** T-008 завершено — 4 різні геометрії (wall / freestanding / corner / roof). Roof має pyramidalдашок (merged Box + Cone). Delta 30%. 107 unit + 39 E2E.
+**Що зроблено:** T-011 завершено — UI палітра з 5+1 кольорів, клавіші 1-6, Surprise unlock після 10 placements. Плюс по ходу — fix/tile-vertical-gaps (видно було щілини між поверхами). 107 unit + 50 E2E.
 
 ## Поточний стан
 - 🟢 Infra: repo + CI (3 джоби: test + e2e + deploy) + Pages + branch protection (required: Unit tests + E2E)
@@ -18,24 +18,27 @@
 - 🟢 **T-007 Done:** ЛКМ place + ПКМ remove + drag-threshold + erase-mode
 - 🟢 **T-CAM Done:** Q/E rotate + wheel zoom + TweenManager
 - 🟢 **T-008 Done:** 4 silhouette-distinct geometries (30% height delta)
-- 🟢 Tests: 107 unit + 39 E2E
-- 🔴 T-009 — Renderer listens cellResolved + migration animations (2h)
+- 🟢 **hotfix tile-vertical-gaps:** stacked cells touch правильно
+- 🟢 **T-011 Done:** палітра UI + клавіші 1-6 + Surprise unlock
+- 🟢 Tests: 107 unit + 50 E2E
+- 🔴 T-013 — Save/Load з edge cases (4h) — наступне
 
 ## Deploy URL
 **https://stfalcon.github.io/townscaper-mvp/**
-Last deploy: 2026-04-20, T-008 merge (commit `006db2b`). **Будинки мають різні силуети.** Roof — з пірамідою, freestanding — вужчий, corner — вищий.
+Last deploy: 2026-04-20, T-011 merge (commit `3af703a`). **Палітра UI — можна грати повноцінно**: вибирай колір кліком або 1-5, склади місто, отримай 6-й Surprise-колір після 10 будинків.
 
 ## Наступна задача
+**T-013: Save/Load у localStorage з edge cases** (4h)
 
-Варіанти:
+- Debounced auto-save 2с
+- `pause()/resume()` для cityGen
+- `QuotaExceededError` → toast, continue in-memory
+- `localStorage` недоступний (Safari private mode) → fallback to Map + banner
+- `fromJSON` → resolver.resolveAll() (бо tileType не персистується)
+- Mock-based unit tests
+- AC-F5-01..07, IS-02, IS-03
 
-**A. T-009 (2h)** — Renderer migration animations без flicker (вже працює, але формалізувати)
-
-**B. T-011 (3h)** — UI палітра з SVG-іконками (діти зможуть вибирати кольори без DevTools)
-
-**C. T-013 (4h)** — Save/Load з edge cases (гра відновлюється після F5)
-
-Рекомендую **T-013 Save/Load** — ключова фіча (одна з success criteria у Vision). Після неї гра «справжня» — побудував щось, закрив вкладку, відкрив — місто на місці.
+Після T-013 гра «справжня» — F5 не втрачає місто.
 
 ## Blockers
 Немає. Очікую «ок» від user.
@@ -55,6 +58,8 @@ Last deploy: 2026-04-20, T-008 merge (commit `006db2b`). **Будинки маю
 | T-007 | ✅ Done | `0cb18c8` (PR #8) | 2026-04-20 |
 | T-CAM | ✅ Done | `c125a59` (PR #9) | 2026-04-20 |
 | T-008 | ✅ Done | `006db2b` (PR #10) | 2026-04-20 |
+| fix/gaps | ✅ Done | `f1cbe98` (PR #11) | 2026-04-20 |
+| T-011 | ✅ Done | `3af703a` (PR #12) | 2026-04-20 |
 
 ## Notes
 - Node 20 deprecation warning у Actions (non-blocking, fix до червня 2026)
