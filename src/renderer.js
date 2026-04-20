@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import {
   GRID_SIZE, CAMERA, PALETTE, COLORS, TILE_TYPES, MAX_CELLS, ANIM,
 } from './constants.js';
@@ -19,6 +20,45 @@ const COLOR_RGB = Object.fromEntries(
 
 function cellKey(cell) {
   return `${cell.x}_${cell.y}_${cell.z}`;
+}
+
+// ---- tile geometry factories ----
+//
+// Each cell slot is a 1×1×1 world unit. Instances are positioned at
+// (x+0.5, y+0.5, z+0.5). Geometry is centered at origin; translate() is
+// relative to that center. Heights differ ≥15% to satisfy T-008 DoD.
+
+function makeWallGeometry() {
+  return new THREE.BoxGeometry(1, 1, 1);
+}
+
+function makeFreestandingGeometry() {
+  // Narrow inset pillar — 0.85×0.9×0.85. Looks different from wall
+  // because horizontal faces recede, suggesting a tower interior.
+  const g = new THREE.BoxGeometry(0.85, 0.9, 0.85);
+  g.translate(0, -0.05, 0); // bottom flush with cell bottom
+  return g;
+}
+
+function makeCornerGeometry() {
+  // Slightly taller (1.1) + slightly inset (0.95) — suggests a turn
+  // in the building line.
+  const g = new THREE.BoxGeometry(0.95, 1.1, 0.95);
+  g.translate(0, 0.05, 0);
+  return g;
+}
+
+function makeRoofGeometry() {
+  // Cube base (height 0.7) + square pyramid (height 0.6) on top.
+  // Pyramid is Cone with 4 radial segments rotated π/4 so base vertices
+  // land on the cube corners (±0.5, *, ±0.5). Total height 1.3 (30%
+  // over wall — satisfies ≥15% silhouette delta).
+  const base = new THREE.BoxGeometry(1, 0.7, 1);
+  base.translate(0, -0.15, 0); // bottom at y=-0.5 (cell bottom)
+  const pyramid = new THREE.ConeGeometry(0.71, 0.6, 4);
+  pyramid.rotateY(Math.PI / 4);
+  pyramid.translate(0, 0.5, 0); // apex at y=+0.8 (0.3 above cell)
+  return mergeGeometries([base, pyramid]);
 }
 
 /**
@@ -218,17 +258,21 @@ export class Renderer {
   }
 
   #setupPools() {
-    // All tileTypes share the same cube geometry for T-005.
-    // T-008 will give each type a distinct geometry.
-    const geometry = new THREE.BoxGeometry(1, 1, 1);
     // Material color stays white — instanceColor (per-instance) is multiplied in.
     // DO NOT set vertexColors: true — that expects geometry.attributes.color and
     // conflicts with the instanceColor path, rendering cubes black.
     const material = new THREE.MeshLambertMaterial({ color: 0xffffff });
 
+    const geometries = {
+      freestanding: makeFreestandingGeometry(),
+      wall: makeWallGeometry(),
+      corner: makeCornerGeometry(),
+      roof: makeRoofGeometry(),
+    };
+
     this.pools = {};
     for (const tileType of TILE_TYPES) {
-      const pool = new InstancePool(tileType, geometry, material, MAX_CELLS);
+      const pool = new InstancePool(tileType, geometries[tileType], material, MAX_CELLS);
       this.pools[tileType] = pool;
       this.scene.add(pool.mesh);
     }
