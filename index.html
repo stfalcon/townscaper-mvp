@@ -90,6 +90,77 @@
       100% { opacity: 1; transform: scale(1) rotate(0deg); }
     }
 
+    /* ---- Mode toggle (T-012) ---- */
+    #mode-toggle {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      display: flex;
+      gap: 8px;
+      z-index: 10;
+      user-select: none;
+    }
+    #mode-toggle[hidden] { display: none; }
+    .mode-btn {
+      width: 56px;
+      height: 56px;
+      border-radius: 14px;
+      border: 3px solid transparent;
+      background-color: rgba(255, 255, 255, 0.75);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      padding: 12px;
+      cursor: pointer;
+      color: #2A2520;
+      transition: border-color 120ms ease-out, background-color 120ms ease-out;
+    }
+    .mode-btn:focus-visible {
+      outline: 2px dashed #2A2520;
+      outline-offset: 3px;
+    }
+    .mode-btn[data-selected="true"] {
+      border-color: #2A2520;
+      background-color: #FFFFFF;
+    }
+    .mode-btn svg {
+      width: 100%;
+      height: 100%;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .mode-btn.shaking {
+      animation: btn-shake 320ms ease-out;
+    }
+    @keyframes btn-shake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-5px); }
+      40% { transform: translateX(5px); }
+      60% { transform: translateX(-3px); }
+      80% { transform: translateX(3px); }
+    }
+    .toast-cursor {
+      position: fixed;
+      pointer-events: none;
+      background: #2A2520;
+      color: #F2EBD3;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      transform: translate(12px, 12px);
+      z-index: 25;
+      animation: toast-fade 1000ms ease-out forwards;
+    }
+    @keyframes toast-fade {
+      0%   { opacity: 0; }
+      10%  { opacity: 1; }
+      80%  { opacity: 1; }
+      100% { opacity: 0; }
+    }
+
     /* ---- SaveState feedback (T-013) ---- */
     .toast {
       position: fixed;
@@ -138,6 +209,24 @@
 </head>
 <body>
   <canvas id="canvas" tabindex="0"></canvas>
+
+  <div id="mode-toggle" role="toolbar" aria-label="Режим" hidden>
+    <button class="mode-btn" type="button" data-mode="build" data-selected="true"
+            aria-label="Будувати" title="Будувати">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M3 11 L12 3 L21 11"></path>
+        <path d="M5 9.5 V21 H19 V9.5"></path>
+        <path d="M10 21 V14 H14 V21"></path>
+      </svg>
+    </button>
+    <button class="mode-btn" type="button" data-mode="erase" data-selected="false"
+            aria-label="Стирати" title="Стирати">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M15 4 L20 9 L11 18 L6 18 L3 15 Z"></path>
+        <path d="M11 18 L20 18"></path>
+      </svg>
+    </button>
+  </div>
 
   <div id="palette" role="toolbar" aria-label="Палітра кольорів"></div>
 
