@@ -115,6 +115,35 @@ export class UI {
   get placementsCount() { return this._placementsCount; }
   get surpriseUnlocked() { return this._surpriseUnlocked; }
 
+  /** Snapshot of persistable UI state (for SaveState). */
+  getSnapshot() {
+    return {
+      selectedColorId: this.input.currentColorId,
+      placementsCount: this._placementsCount,
+      surpriseUnlocked: this._surpriseUnlocked,
+    };
+  }
+
+  /**
+   * Restore UI state from a saved snapshot. Doesn't play unlock animation
+   * (it's a restore, not a reward — just sets the button visible silently).
+   */
+  restoreSnapshot(snap) {
+    if (!snap) return;
+    this._placementsCount = snap.placementsCount ?? 0;
+    if (snap.surpriseUnlocked && !this._surpriseUnlocked) {
+      this._surpriseUnlocked = true;
+      const btn = this._buttons.get(SURPRISE_COLOR_ID);
+      if (btn) {
+        delete btn.dataset.locked;
+        btn.removeAttribute('aria-hidden');
+      }
+    }
+    if (typeof snap.selectedColorId === 'number') {
+      this.selectColor(snap.selectedColorId);
+    }
+  }
+
   dispose() {
     this.paletteEl.removeEventListener('click', this._onPaletteClick);
     window.removeEventListener('keydown', this._onKeyDown);
