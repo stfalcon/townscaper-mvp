@@ -33,17 +33,19 @@ function makeWallGeometry() {
 }
 
 function makeFreestandingGeometry() {
-  // Narrow inset pillar (0.85×1.0×0.85). Height MUST be 1.0 — otherwise
-  // stacked cells leave a horizontal gap showing the ground between
-  // floors. Differentiation from 'wall' is via XZ-inset only.
-  return new THREE.BoxGeometry(0.85, 1.0, 0.85);
+  // Plain 1×1×1 — visually identical to 'wall' on purpose.
+  // Narrowed geometries (earlier T-008 iteration) created a visible
+  // horizontal gap where a freestanding cell met a full-width wall/roof
+  // neighbor. Since freestanding always has hasAbove=true, its top is
+  // never visible anyway — so any would-be distinction can't show.
+  return new THREE.BoxGeometry(1, 1, 1);
 }
 
 function makeCornerGeometry() {
-  // Slightly inset (0.95×1.0×0.95), full height. Can't be taller than
-  // 1.0 because 'corner' requires hasAbove=true — a taller geometry
-  // would clip into the cell above.
-  return new THREE.BoxGeometry(0.95, 1.0, 0.95);
+  // Plain 1×1×1 for the same gap-avoidance reason as freestanding.
+  // Corner visual differentiation deferred to a future task where
+  // we'd need per-face vertex manipulation (not shape scaling).
+  return new THREE.BoxGeometry(1, 1, 1);
 }
 
 function makeRoofGeometry() {
@@ -53,7 +55,10 @@ function makeRoofGeometry() {
   // over wall — satisfies ≥15% silhouette delta).
   const base = new THREE.BoxGeometry(1, 0.7, 1);
   base.translate(0, -0.15, 0); // bottom at y=-0.5 (cell bottom)
-  const pyramid = new THREE.ConeGeometry(0.71, 0.6, 4);
+  // Pyramid radius = √2/2 so vertices land EXACTLY at cube corners (±0.5)
+  // after π/4 rotation. Using a rounded 0.71 left a 0.002 offset that
+  // broke the bbox regression test.
+  const pyramid = new THREE.ConeGeometry(Math.SQRT1_2, 0.6, 4);
   pyramid.rotateY(Math.PI / 4);
   pyramid.translate(0, 0.5, 0); // apex at y=+0.8 (0.3 above cell)
   return mergeGeometries([base, pyramid]);

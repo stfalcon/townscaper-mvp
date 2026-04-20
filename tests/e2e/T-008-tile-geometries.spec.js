@@ -132,6 +132,48 @@ test.describe('T-008: 4 distinct tile geometries', () => {
     await page.screenshot({ path: 'docs/screenshots/T-008-tower-closeup.png' });
   });
 
+  test('non-roof cells have NO horizontal gaps (regression for fix/horizontal-gaps)', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForSelector('canvas#canvas');
+    await page.waitForTimeout(200);
+
+    // All non-roof geometries must fill the full 1×1×1 cell in ALL axes
+    // (not just Y) — otherwise adjacent cells at the same level show a
+    // horizontal slit of grass/ground between them.
+    const extents = await page.evaluate(() => {
+      const r = window.__game__.renderer;
+      const out = {};
+      for (const [tileType, pool] of Object.entries(r.pools)) {
+        pool.mesh.geometry.computeBoundingBox();
+        const bb = pool.mesh.geometry.boundingBox;
+        out[tileType] = {
+          x: [bb.min.x, bb.max.x],
+          y: [bb.min.y, bb.max.y],
+          z: [bb.min.z, bb.max.z],
+        };
+      }
+      return out;
+    });
+
+    for (const tileType of ['wall', 'freestanding', 'corner']) {
+      const e = extents[tileType];
+      // Fill full cell on every axis — bbox must span [-0.5, +0.5]
+      expect(e.x[0]).toBeCloseTo(-0.5, 5);
+      expect(e.x[1]).toBeCloseTo(0.5, 5);
+      expect(e.y[0]).toBeCloseTo(-0.5, 5);
+      expect(e.y[1]).toBeCloseTo(0.5, 5);
+      expect(e.z[0]).toBeCloseTo(-0.5, 5);
+      expect(e.z[1]).toBeCloseTo(0.5, 5);
+    }
+    // Roof may protrude up (pyramid) but must still fill footprint
+    expect(extents.roof.x[0]).toBeCloseTo(-0.5, 5);
+    expect(extents.roof.x[1]).toBeCloseTo(0.5, 5);
+    expect(extents.roof.z[0]).toBeCloseTo(-0.5, 5);
+    expect(extents.roof.z[1]).toBeCloseTo(0.5, 5);
+    expect(extents.roof.y[0]).toBeCloseTo(-0.5, 5);
+    expect(extents.roof.y[1]).toBeGreaterThan(0.5);
+  });
+
   test('stacked non-roof cells have NO vertical gap (regression for fix/tile-vertical-gaps)', async ({ page }) => {
     await page.goto('/');
     await page.waitForSelector('canvas#canvas');
