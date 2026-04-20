@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { pickWithDDA } from './picking.js';
-import { CLICK_THRESHOLD } from './constants.js';
+import { CLICK_THRESHOLD, COLORS } from './constants.js';
+
+const COLOR_BY_ID = Object.fromEntries(COLORS.map((c) => [c.id, c.hex]));
 
 /**
  * Wires pointer events to picking + hover + place/remove.
@@ -88,7 +90,8 @@ export class InputManager {
     if (key === this._lastHoverKey) return;
     this._lastHoverKey = key;
     const valid = this.state.canPlace(c.x, c.y, c.z).ok;
-    this.renderer.setHover({ ...c, valid });
+    const color = COLOR_BY_ID[this.currentColorId] ?? 0xffffff;
+    this.renderer.setHover({ ...c, valid, color });
   }
 
   _onLeave() {

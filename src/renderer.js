@@ -297,7 +297,11 @@ export class Renderer {
       return;
     }
     this.hoverMesh.position.set(coord.x + 0.5, coord.y + 0.5, coord.z + 0.5);
-    this.hoverMesh.material.color.setHex(coord.valid === false ? 0xff4444 : 0xffffff);
+    if (coord.valid === false) {
+      this.hoverMesh.material.color.setHex(0xff4444);
+    } else {
+      this.hoverMesh.material.color.setHex(coord.color ?? 0xffffff);
+    }
     this.hoverMesh.visible = true;
   }
 

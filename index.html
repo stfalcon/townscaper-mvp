@@ -34,6 +34,61 @@
       color: #2A2520;
     }
     #no-webgl.show { display: flex; }
+
+    /* ---- Palette (T-011) ---- */
+    #palette {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 12px;
+      padding: 10px 14px;
+      background: rgba(255, 255, 255, 0.75);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-radius: 20px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+      z-index: 10;
+      user-select: none;
+    }
+    .color-btn {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      border: 3px solid transparent;
+      background-color: var(--color);
+      cursor: pointer;
+      padding: 0;
+      transition: border-color 120ms ease-out;
+    }
+    .color-btn:focus-visible {
+      outline: 2px dashed #2A2520;
+      outline-offset: 3px;
+    }
+    .color-btn[data-selected="true"] {
+      border-color: #ffffff;
+      box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.2);
+    }
+    .color-btn.pulsing {
+      animation: btn-pulse 150ms ease-out;
+    }
+    @keyframes btn-pulse {
+      0%   { transform: scale(1); }
+      50%  { transform: scale(1.15); }
+      100% { transform: scale(1); }
+    }
+    .color-btn[data-locked="true"] {
+      display: none;
+    }
+    .color-btn.unlocking {
+      display: inline-block;
+      animation: btn-unlock 400ms cubic-bezier(.34,1.56,.64,1);
+    }
+    @keyframes btn-unlock {
+      0%   { opacity: 0; transform: scale(0.4) rotate(-60deg); }
+      100% { opacity: 1; transform: scale(1) rotate(0deg); }
+    }
   </style>
 
   <script async src="https://cdn.jsdelivr.net/npm/es-module-shims@1.10.0/dist/es-module-shims.js"></script>
@@ -49,6 +104,8 @@
 </head>
 <body>
   <canvas id="canvas" tabindex="0"></canvas>
+
+  <div id="palette" role="toolbar" aria-label="Палітра кольорів"></div>
 
   <div id="no-webgl">
     <div>
