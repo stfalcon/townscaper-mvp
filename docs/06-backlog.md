@@ -87,7 +87,7 @@
 
 ---
 
-#### T-004: TileResolver модуль + unit + integration
+#### T-004: TileResolver модуль + unit + integration ✅ **Done** (PR #5, `85737bc`)
 **Epic:** E3 | **Estimate:** 3h | **Priority:** P0 | **Dependencies:** T-002, T-003
 
 **Опис:** Новий модуль — єдиний оркестратор re-tile. Підписується на `cellChanged` priority=1, обчислює tileType для зачеплених cells + 6 сусідів, викликає `state.updateTile`. Метод `resolveAll()` для post-load.

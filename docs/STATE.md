@@ -4,7 +4,7 @@
 
 ## Остання сесія
 **Дата:** 2026-04-20
-**Що зроблено:** T-003 завершено — pure `resolveTile` функція з 10-case data-driven test (AC-F3-04). 71 unit + 9 E2E, coverage 100%.
+**Що зроблено:** T-004 завершено — TileResolver модуль, priority-based orchestrator re-tile з no-op optimization і resolveAll для post-load. 86 unit + 11 E2E, coverage 100%.
 
 ## Поточний стан
 - 🟢 Infra: repo + CI (3 джоби: test + e2e + deploy) + Pages + branch protection (required: Unit tests + E2E)
@@ -12,22 +12,25 @@
 - 🟢 **infra/playwright-setup Done:** агент сам перевіряє через Playwright перед PO-тестом
 - 🟢 **T-002 Done:** GameState модуль з повним API з TDD §3.2
 - 🟢 **T-003 Done:** pure resolveTile + 10-case data-driven test
-- 🟢 Tests: 71 unit (100% coverage) + 9 E2E
-- 🔴 T-004 TileResolver — не розпочато
+- 🟢 **T-004 Done:** TileResolver (priority=1) + no-op optimization + resolveAll
+- 🟢 Tests: 86 unit (100% coverage) + 11 E2E
+- 🔴 T-005 — 4-pool InstancedMesh + instanceColor (6h, найбільша задача рендеру)
 
 ## Deploy URL
 **https://stfalcon.github.io/townscaper-mvp/**
-Last deploy: 2026-04-20, T-003 merge (commit `a80c12f`). Візуально ідентично T-001 — нова логіка поки не wired у рендер.
+Last deploy: 2026-04-20, T-004 merge (commit `85737bc`). Візуально ідентично T-001 — логіка (state + resolver) готова, рендер ще не wired.
 
 ## Наступна задача
-**T-004: TileResolver модуль + unit + integration** (3h estimate)
+**T-005: 4-пульні InstancedMesh + instanceColor** (6h estimate)
 
-- Новий модуль — єдиний оркестратор re-tile
-- Підписується на `cellChanged` priority=1, обчислює tileType для cell + 6 сусідів, кличе `state.updateTile`
-- Метод `resolveAll()` для post-load
-- AC-F3-03 (scope ≤7), IS-01, IS-05
+- 4 `InstancedMesh` пули (по одному на tileType), не 20
+- Колір через `InstancedBufferAttribute('instanceColor', 3)` + `MeshLambertMaterial({vertexColors: true})`
+- Swap-remove allocate/free instanceId
+- Setup `mesh.computeBoundingSphere()` для frustum culling
+- Dev spawner `?dev=1&spawn=500` для measurement FPS
+- DoD: 60 FPS @ 500 cells на M1
 
-Потім → T-005 4-pool InstancedMesh → T-006 math-picking → T-007 Place/Remove.
+Це найбільша задача — після неї буде ВИДНО кубики на сцені (хоч без кліку ще).
 
 ## Blockers
 Немає. Очікую «ок» від user.
@@ -41,6 +44,7 @@ Last deploy: 2026-04-20, T-003 merge (commit `a80c12f`). Візуально ід
 | infra/playwright | ✅ Done | `1de8da7` (PR #2) | 2026-04-20 |
 | T-002 | ✅ Done | `b9f5d5c` (PR #3) | 2026-04-20 |
 | T-003 | ✅ Done | `a80c12f` (PR #4) | 2026-04-20 |
+| T-004 | ✅ Done | `85737bc` (PR #5) | 2026-04-20 |
 
 ## Notes
 - Node 20 deprecation warning у Actions (non-blocking, fix до червня 2026)
