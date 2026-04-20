@@ -3,6 +3,7 @@ import { TileResolver } from './tileResolver.js';
 import { Renderer } from './renderer.js';
 import { InputManager } from './input.js';
 import { UI } from './ui.js';
+import { SaveState } from './saveState.js';
 import { COLORS, GRID_SIZE, MAX_HEIGHT } from './constants.js';
 
 const canvas = document.getElementById('canvas');
@@ -15,11 +16,20 @@ const state = new GameState();
 const resolver = new TileResolver(state);   // priority=1
 const renderer = new Renderer(canvas, state); // priority=2, 3
 const input = new InputManager({ canvas, camera: renderer.camera, state, renderer });
-const ui = new UI({ state, input });
+const ui = new UI({ state, input });           // priority=5
+const saveState = new SaveState({ state, resolver, ui }); // priority=6
+saveState.attach();
+
+// Restore previous session BEFORE rendering starts to avoid flicker.
+// Allow ?fresh=1 or ?spawn=N to skip load (for dev / demo snapshots).
+if (!params.has('fresh') && !params.has('spawn')) {
+  saveState.load();
+}
+
 renderer.start();
 
 // Expose for DevTools inspection
-window.__game__ = { state, resolver, renderer, input, ui };
+window.__game__ = { state, resolver, renderer, input, ui, saveState };
 
 // --- Dev helpers ---
 if (params.has('dev')) loadDevTools();
