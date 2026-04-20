@@ -187,7 +187,7 @@
 
 ---
 
-#### T-CAM: Camera rotate (Q/E) + zoom з clamp
+#### T-CAM: Camera rotate (Q/E) + zoom з clamp ✅ **Done** (PR #9, `c125a59`)
 **Epic:** E4 | **Estimate:** 2h | **Priority:** P1 | **Dependencies:** T-001
 
 **Опис:** Q/E → yaw ±90° snap з 200мс easeInOutCubic tween. Wheel → zoom 0.1 step, clamp 0.5-2.0 з spring-bounce feedback на межах.
