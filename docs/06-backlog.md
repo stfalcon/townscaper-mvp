@@ -265,7 +265,7 @@
 
 ### Sprint 5: Polish + Bonus + Ops (~7 год)
 
-#### T-014: Central TweenManager + scale animations
+#### T-014: Central TweenManager + scale animations ✅ **Done** (PR #17, `c38fb20`)
 **Epic:** E6 | **Estimate:** 2h | **Priority:** P1 | **Dependencies:** T-005
 
 **Опис:** `tween.js` з `TweenManager` — один RAF loop. `start(key, {...})` cancel якщо існує. Keyed by cellKey (не instanceId). Driven з `renderer.render()`.
