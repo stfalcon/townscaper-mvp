@@ -304,6 +304,55 @@ export function generateCity(state, { center = {x:15, z:15}, maxCells = 60, rng 
 **Clear all — hold-to-confirm:**
 Замість Yes/No модалки — кнопка з radial progress що треба утримувати 1.5с. Випадковий клік C нічого не знесе.
 
+### 3.10a Phase 2 — Townscaper-look розширення (planned)
+
+**Зміни у Renderer для Phase 2:**
+
+1. **4 → 9 InstancedMesh пулів** (T-PH2-B7):
+   - `wall`, `freestanding`, `corner` — незмінні (plain bevel-box)
+   - 6 roof variants: `roof-single`, `roof-ridge-NS`, `roof-ridge-EW`, `roof-hip-L`, `roof-hip-T`, `roof-flat`
+   - FPS budget: 9 draw calls + 4 decoration pools + 1 shadow pool = 14 total. Вкладаємось у ≥30 FPS на Intel UHD 620.
+
+2. **Bevel-геометрії** (T-PH2-A1): Всі non-decoration меші мають chamfered TOP + VERTICAL edges, flat BOTTOM (no-gap invariant). Використовуємо `ExtrudeGeometry` або кастомний BufferGeometry.
+
+3. **Vertex AO** (T-PH2-A2): `BufferAttribute('color', 3)` у кожній геометрії. Material `vertexColors: true`. Three.js r160 документовано множить vertex color × instance color × lighting. Якщо цей path зламаний — fallback через `material.onBeforeCompile` shader patch.
+
+4. **Contact shadows pool** (T-PH2-A4): окремий `InstancedMesh` з `PlaneGeometry(1.2, 1.2)` на y=0.01. Shadow texture — `THREE.CanvasTexture` з canvas radial gradient (згенеровано у коді, 0 файлів). Алоцується лише для ground-level (y===0) cells.
+
+5. **Decorations pools** (T-PH2-C2): 4 окремі `InstancedMesh` (window/chimney/door/plant). Allocate/free у `#onCellResolved`/`#onCellRemoved` на основі `decorationsFor(cell)` з `src/decorations.js`. Feature flag `?decor=0`.
+
+**Контракт: роль кожного pool-маніпулювання**
+- Main 9 pools — слухають `cellResolved` (existing)
+- Shadow pool — слухає `cellChanged` (add/remove filtered на y===0)
+- Decoration pools — слухають `cellResolved`, викликають `decorationsFor()`, алоцирують у відповідних pools
+
+**Performance risks:**
+- 9 main pools замість 4 — 5 додаткових draw calls. Intel UHD тримає 30+ FPS (перевірити у T-PH2-B7 guard)
+- Vertex AO збільшує vertex count ×1.5 (новий color attribute) — прийнятно
+- Decorations додають 4 pools з малими геометріями — мало вершин кожна
+
+### 3.11 `decorations.js` (planned, Phase 2)
+
+**Відповідальність:** детерміністичні рішення про декорації для cell, без state на зовні.
+
+**API:**
+```js
+// Deterministic — same cellKey returns same decorations across sessions
+export function decorationsFor(cell, neighbors) {
+  // Returns { window: boolean, chimney: boolean, door: boolean, plant: boolean }
+}
+```
+
+**Hash:** inline murmur3-4byte з seed `${x}_${y}_${z}`. Повертає 4 uniform [0,1) числа для 4 decision-gates.
+
+**Probability gates (ініціально):**
+- window: 0.15 && hasExposedWall(neighbors)
+- chimney: 0.10 && isRoof(cell.tileType)
+- door: 0.05 && cell.y===0 && hasExposedWall
+- plant: 0.07 && isRoof(cell.tileType)
+
+Детерміністично: `decorationsFor(cellA) === decorationsFor(cellA)` завжди. Re-tile не змінює (бо tileType не бере участі у hash).
+
 ### 3.10 `tween.js` — центральний TweenManager
 
 **Зміна проти v1:** не per-tween `requestAnimationFrame`. Один RAF loop драйвиться з `renderer.render()`.
