@@ -32,9 +32,19 @@ export class GameState {
       return { ok: false, reason: 'too-many' };
     }
     if (type === 'land') {
-      // Land only at water level (y=0). No support required — islands may seed
-      // anywhere on water.
+      // Land only at water level (y=0).
       if (y !== 0) return { ok: false, reason: 'land-y-must-be-zero' };
+      // First land anywhere (seed the island). Afterwards new land must
+      // connect to an existing land cell — no disjoint archipelagos.
+      const hasAnyLand = Array.from(this.#cells.values())
+        .some((c) => c.type === 'land');
+      if (!hasAnyLand) return { ok: true };
+      const hasLandNeighbor =
+        this.getCell(x - 1, 0, z)?.type === 'land' ||
+        this.getCell(x + 1, 0, z)?.type === 'land' ||
+        this.getCell(x, 0, z - 1)?.type === 'land' ||
+        this.getCell(x, 0, z + 1)?.type === 'land';
+      if (!hasLandNeighbor) return { ok: false, reason: 'land-not-connected' };
       return { ok: true };
     }
     // building:

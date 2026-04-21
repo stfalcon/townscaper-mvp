@@ -62,7 +62,8 @@ test.describe('T-002: GameState module in browser', () => {
       const s = new GameState();
       s.setCell(5, 0, 5, { type: 'land' });
       return {
-        landInBounds: s.canPlace(10, 0, 10, 'land'),
+        landAdjacent: s.canPlace(6, 0, 5, 'land'),
+        landDisjoint: s.canPlace(20, 0, 20, 'land'),
         landAboveZero: s.canPlace(10, 1, 10, 'land'),
         outOfBounds: s.canPlace(-1, 0, 5),
         buildingAtYZero: s.canPlace(10, 0, 10),
@@ -72,7 +73,8 @@ test.describe('T-002: GameState module in browser', () => {
         buildingOnLand: s.canPlace(5, 1, 5),
       };
     });
-    expect(results.landInBounds).toEqual({ ok: true });
+    expect(results.landAdjacent).toEqual({ ok: true });
+    expect(results.landDisjoint).toEqual({ ok: false, reason: 'land-not-connected' });
     expect(results.landAboveZero).toEqual({ ok: false, reason: 'land-y-must-be-zero' });
     expect(results.outOfBounds).toEqual({ ok: false, reason: 'out-of-bounds' });
     expect(results.buildingAtYZero).toEqual({ ok: false, reason: 'building-needs-land' });
