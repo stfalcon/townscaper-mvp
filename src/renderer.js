@@ -9,6 +9,12 @@ import { TweenManager, easeInOutCubic, easeOutQuad, easeOutBack, easeInQuad } fr
 const BEVEL_RADIUS = 0.10; // 10% — visible at dimetric 30° zoom (frontend review: 0.06 was too subtle)
 const BEVEL_SEGMENTS = 2;  // smoothness tradeoff vs vertex count
 
+// Vertex AO gradient — darkens bottom + corners, lightens top.
+// Multiplied into instance color via vertexColors:true + instanceColor path.
+const AO_BOTTOM = 0.72; // strongest shadow (bottom ground contact)
+const AO_EDGE = 0.88;   // medium (side corners, where walls meet)
+const AO_TOP = 1.0;     // no shadow (top surface)
+
 const ZOOM_MIN = 0.5;
 const ZOOM_MAX = 2.0;
 const ZOOM_STEP = 0.1;
@@ -54,6 +60,32 @@ function flattenBottom(geometry, threshold = -0.45) {
 }
 
 /**
+ * Bake vertex AO as a BufferAttribute('color'). Y-gradient: bottom darkest,
+ * top brightest. Per frontend-architect review: must be applied BEFORE pool
+ * material sets `vertexColors: true`, and AO lives in geometry (static), not
+ * per-instance. Shader chunk multiplies vColor × instanceColor × light —
+ * verified in Three.js r160 `<color_vertex>` / `<color_fragment>`.
+ */
+function applyVertexAO(geometry) {
+  const pos = geometry.attributes.position;
+  const count = pos.count;
+  const colors = new Float32Array(count * 3);
+  for (let i = 0; i < count; i++) {
+    const y = pos.getY(i);
+    // Map y from [-0.5, top-of-cell] to [AO_BOTTOM, AO_TOP] linearly.
+    // Bottom face (y=-0.5) gets AO_BOTTOM. Vertices above y≈0 get closer to AO_TOP.
+    // Edge verts (corners, where bevel lives) get AO_EDGE.
+    const t = Math.max(0, Math.min(1, (y + 0.5) / 1.0));
+    const ao = AO_BOTTOM + (AO_TOP - AO_BOTTOM) * t;
+    colors[i * 3] = ao;
+    colors[i * 3 + 1] = ao;
+    colors[i * 3 + 2] = ao;
+  }
+  geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  return geometry;
+}
+
+/**
  * Bevelled 1×1×1 box with flat bottom. Per frontend review: RoundedBoxGeometry
  * + flatten bottom is correct approach; ExtrudeGeometry bevels both caps and
  * breaks no-gap invariant.
@@ -61,6 +93,7 @@ function flattenBottom(geometry, threshold = -0.45) {
 function makeBevelBox(width = 1, height = 1, depth = 1, radius = BEVEL_RADIUS) {
   const g = new RoundedBoxGeometry(width, height, depth, BEVEL_SEGMENTS, radius);
   flattenBottom(g);
+  applyVertexAO(g);
   return g;
 }
 
@@ -88,9 +121,13 @@ function makeRoofGeometry() {
   // inputs. RoundedBoxGeometry is indexed. Convert both to non-indexed first.
   const base = makeBevelBox(1, 0.7, 1);
   base.translate(0, -0.15, 0); // bottom at y=-0.5 (cell bottom), top at y=+0.2
+  // Re-bake AO against post-translate positions so the Y-gradient aligns
+  // with world-space instead of geometry-local.
+  applyVertexAO(base);
   const pyramid = new THREE.ConeGeometry(Math.SQRT1_2, 0.6, 4);
   pyramid.rotateY(Math.PI / 4);
   pyramid.translate(0, 0.5, 0); // apex at y=+0.8 (0.3 above cell top)
+  applyVertexAO(pyramid);
   // Normalize both to non-indexed before merge (only convert indexed ones —
   // Three.js warns if you call toNonIndexed on already-non-indexed geometry).
   const baseND = base.index ? base.toNonIndexed() : base;
@@ -322,10 +359,16 @@ export class Renderer {
   }
 
   #setupPools() {
-    // Material color stays white — instanceColor (per-instance) is multiplied in.
-    // DO NOT set vertexColors: true — that expects geometry.attributes.color and
-    // conflicts with the instanceColor path, rendering cubes black.
-    const material = new THREE.MeshLambertMaterial({ color: 0xffffff });
+    // Material uses BOTH vertex colors (vertex AO gradient baked in via
+    // applyVertexAO) AND per-instance color (palette). Three.js r160 shader
+    // chunk multiplies: finalColor = diffuse × vColor × instanceColor × light.
+    // Precondition: geometry MUST have 'color' attribute BEFORE this material
+    // is attached to an InstancedMesh (otherwise vColor=0 → black cubes).
+    // applyVertexAO() is called in every makeXGeometry — verify if changing.
+    const material = new THREE.MeshLambertMaterial({
+      color: 0xffffff,
+      vertexColors: true,
+    });
 
     const geometries = {
       freestanding: makeFreestandingGeometry(),
