@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import {
   GRID_SIZE, MAX_HEIGHT, MAX_CELLS, CELL_SIZE,
-  COLORS, TILE_TYPES, ANIM, CLICK_THRESHOLD,
+  COLORS, TILE_TYPES, BUILDING_TILE_TYPES, LAND_COLOR_ID, LAND_COLOR,
+  ANIM, CLICK_THRESHOLD,
   CAMERA, PALETTE, STORAGE_KEY,
 } from '../src/constants.js';
 
@@ -28,8 +29,18 @@ describe('constants', () => {
     expect(COLORS[5].unlockAfter).toBe(10);
   });
 
-  it('TILE_TYPES covers 4 variants from TDD §5.1', () => {
-    expect(TILE_TYPES).toEqual(['freestanding', 'wall', 'corner', 'roof']);
+  it('TILE_TYPES covers 4 building variants + land', () => {
+    expect(TILE_TYPES).toEqual(['freestanding', 'wall', 'corner', 'roof', 'land']);
+  });
+
+  it('BUILDING_TILE_TYPES covers just the 4 building variants from TDD §5.1', () => {
+    expect(BUILDING_TILE_TYPES).toEqual(['freestanding', 'wall', 'corner', 'roof']);
+  });
+
+  it('LAND_COLOR_ID is reserved at 0 (not in palette)', () => {
+    expect(LAND_COLOR_ID).toBe(0);
+    expect(COLORS.find((c) => c.id === 0)).toBeUndefined();
+    expect(typeof LAND_COLOR).toBe('number');
   });
 
   it('ANIM has all required durations', () => {
@@ -51,6 +62,7 @@ describe('constants', () => {
   it('PALETTE has required world colors', () => {
     expect(PALETTE.grass).toBe(0xB8D49A);
     expect(PALETTE.skyTop).toBe(0xC8E0ED);
+    expect(typeof PALETTE.water).toBe('number');
   });
 
   it('STORAGE_KEY is versioned', () => {

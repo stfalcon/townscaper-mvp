@@ -72,7 +72,7 @@ test.describe('T-013: save/load via localStorage', () => {
   test('AC-F5-03: corrupt save is cleared, game still loads', async ({ page }) => {
     await page.goto('/?fresh=1');
     await page.evaluate(() =>
-      localStorage.setItem('townscaper-mvp-v1', 'not json {{{'),
+      localStorage.setItem('townscaper-mvp-v2', 'not json {{{'),
     );
     await page.goto('/');
     await page.waitForSelector('canvas#canvas');
@@ -80,7 +80,7 @@ test.describe('T-013: save/load via localStorage', () => {
 
     const s = await page.evaluate(() => ({
       cells: window.__game__.state.all().length,
-      stored: localStorage.getItem('townscaper-mvp-v1'),
+      stored: localStorage.getItem('townscaper-mvp-v2'),
     }));
     expect(s.cells).toBe(0);
     expect(s.stored).toBeNull(); // cleared

@@ -114,21 +114,52 @@ test.describe('T-011: palette UI + keyboard + surprise unlock', () => {
     expect(total).toBe(0);
   });
 
-  test('placement uses the selected color', async ({ page }) => {
+  test('placement on land uses the selected color', async ({ page }) => {
     await page.goto('/');
     await page.waitForSelector('#palette');
     await page.locator('.color-btn[data-color-id="3"]').click();
     await page.waitForTimeout(50);
 
-    const v = page.viewportSize();
-    await page.mouse.click(Math.floor(v.width / 2), Math.floor(v.height / 2));
+    // Seed a land pad directly via state so we don't depend on mouse→world
+    // ray geometry. Then a real user click on that land cube's screen-space
+    // location should place a BUILDING at y=1 with the palette color.
+    await page.evaluate(() => {
+      window.__game__.state.setCell(15, 0, 15, { type: 'land' });
+    });
     await page.waitForTimeout(100);
 
+    // Project world cell center to screen for a deterministic click point.
+    const screen = await page.evaluate(() => {
+      const { renderer } = window.__game__;
+      const THREE = { Vector3: class {
+        constructor(x, y, z) { this.x = x; this.y = y; this.z = z; }
+        project(cam) {
+          const v = cam.projectionMatrix.clone().multiply(cam.matrixWorldInverse);
+          const arr = [this.x, this.y, this.z, 1];
+          const out = [0, 0, 0, 0];
+          const e = v.elements;
+          for (let r = 0; r < 4; r++)
+            for (let c = 0; c < 4; c++)
+              out[r] += e[r + c * 4] * arr[c];
+          out[0] /= out[3]; out[1] /= out[3]; out[2] /= out[3];
+          return { x: out[0], y: out[1], z: out[2] };
+        }
+      }};
+      const p = new THREE.Vector3(15.5, 1.0, 15.5).project(renderer.camera);
+      return {
+        x: ((p.x + 1) / 2) * window.innerWidth,
+        y: ((-p.y + 1) / 2) * window.innerHeight,
+      };
+    });
+    await page.mouse.click(Math.round(screen.x), Math.round(screen.y));
+    await page.waitForTimeout(200);
+
     const cells = await page.evaluate(() =>
-      window.__game__.state.all().map((c) => c.colorId),
+      window.__game__.state.all().map((c) => ({ x: c.x, y: c.y, z: c.z, type: c.type, colorId: c.colorId })),
     );
-    expect(cells).toHaveLength(1);
-    expect(cells[0]).toBe(3);
+    const building = cells.find((c) => c.type === 'building');
+    expect(building).toBeDefined();
+    expect(building.colorId).toBe(3);
   });
 
   test('visual snapshot: palette visible + colored tower', async ({ page }) => {

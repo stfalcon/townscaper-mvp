@@ -469,3 +469,46 @@ T-DEMO depends on T-016 + T-018
 ```
 
 Sprint 1 можна починати у паралель: T-001 і T-002+T-003+T-004 — незалежні треки. Ідеально для 2-х АІ-агентів паралельно.
+
+---
+
+# Phase 2 — Townscaper-look (post-MVP)
+
+> **Rewritten 2026-04-21** після користувацького insight: Townscaper — двошарова гра (вода + земля + будинки). Старий план (bevels + AO + warm lighting) підмінено. Core mechanic першочергово.
+
+## Sprint 2A — Water + Land foundation (~6h)
+
+### T-PH2-W1+W2+W3: Water background + land tile + two-layer interaction ✅ **Done**
+**Estimate:** 5h actual | **Commit:** (pending PR)
+
+Combined atomic change: water plane замість trav'яного поля, новий `cell.type: 'land'|'building'`, 5-й InstancedMesh pool для land (LAND_COLOR green), клік на воду → land (y=0), клік на land top → building (y≥1). Buildings не можуть існувати на рівні води без land.
+
+**DoD met:**
+- [x] `PALETTE.water` + blue plane replaces grass
+- [x] `LAND_COLOR_ID=0`, `LAND_COLOR`, `BUILDING_TILE_TYPES` exports
+- [x] `cell.type` stored + `canPlace(x,y,z,type)` type-aware
+- [x] resolveTile returns 'land' for land cells
+- [x] Renderer has 5 pools (incl. 'land')
+- [x] Input routes placement by placementCoord.y
+- [x] Save v2 format (v1 auto-invalidated via new STORAGE_KEY)
+- [x] 6 new E2E tests (`T-PH2-W1-water-land.spec.js`)
+- [x] Unit test suite updated (129 passed, no regressions)
+- [x] All 74+6 E2E pass
+
+### T-PH2-W4: Land tile variants (corner/edge/inner) — ~3h
+**Status:** 🔴 Planned
+
+Как у merged roofs — land cells мають 4 варіанти залежно від land-сусідів: corner (2 sides exposed), edge (1 side exposed), inner (no sides exposed). Smooth island contour instead of square pixel edges.
+
+### T-PH2-W5: Water animation — ~1h
+**Status:** 🔴 Planned (nice-to-have)
+
+Subtle water surface animation через shader offset (not fullscreen — Intel UHD budget).
+
+## Sprint 2B — Merged roofs (~10h)
+
+_Previous Phase 2 plan, lower priority now. Roofs залишаються 4 variants._
+
+## Sprint 2C — Decorations (~8h)
+
+_Previous Phase 2 plan, deferred._

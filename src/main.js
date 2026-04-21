@@ -41,8 +41,19 @@ if (params.has('spawn')) {
 }
 
 function spawnCells(state, n, mode) {
+  // Helper: place via real canPlace so spawn respects land-first rule.
+  const tryPlace = (x, y, z) => {
+    if (y === 0) {
+      if (!state.canPlace(x, 0, z, 'land').ok) return false;
+      state.setCell(x, 0, z, { type: 'land' });
+      return true;
+    }
+    if (!state.canPlace(x, y, z).ok) return false;
+    state.setCell(x, y, z, { colorId: 1 + Math.floor(Math.random() * 5), type: 'building' });
+    return true;
+  };
+
   if (mode === 'cluster') {
-    // BFS-like cluster near center: denser, more re-tiles (worst case for perf)
     const queue = [{ x: Math.floor(GRID_SIZE / 2), y: 0, z: Math.floor(GRID_SIZE / 2) }];
     const visited = new Set();
     let placed = 0;
@@ -51,27 +62,21 @@ function spawnCells(state, n, mode) {
       const k = `${x}_${y}_${z}`;
       if (visited.has(k)) continue;
       visited.add(k);
-      if (!state.canPlace(x, y, z).ok) continue;
-      const colorId = 1 + Math.floor(Math.random() * 5);
-      state.setCell(x, y, z, { colorId });
+      if (!tryPlace(x, y, z)) continue;
       placed++;
-      // Push neighbors randomly
       for (const [dx, dy, dz] of [[1, 0, 0], [-1, 0, 0], [0, 0, 1], [0, 0, -1], [0, 1, 0]]) {
         if (Math.random() < 0.75) queue.push({ x: x + dx, y: y + dy, z: z + dz });
       }
     }
     console.info(`[dev] spawned ${placed} cells (cluster mode)`);
   } else {
-    // 'random': scattered cells at y=0
+    // 'random': scattered land cells at y=0
     let placed = 0;
     let attempts = 0;
     while (placed < n && attempts < n * 10) {
       const x = Math.floor(Math.random() * GRID_SIZE);
       const z = Math.floor(Math.random() * GRID_SIZE);
-      if (state.canPlace(x, 0, z).ok) {
-        state.setCell(x, 0, z, { colorId: 1 + Math.floor(Math.random() * 5) });
-        placed++;
-      }
+      if (tryPlace(x, 0, z)) placed++;
       attempts++;
     }
     console.info(`[dev] spawned ${placed} cells (random mode)`);

@@ -4,7 +4,7 @@
 
 ## Остання сесія
 **Дата:** 2026-04-21
-**Що зроблено:** T-014 завершено — scale tweens на place (bounce) / remove (shrink) через TweenManager. Cubes pinned-bottom до cell.y протягом всієї анімації. Plus fix/erase-hover. 122 unit + 74 E2E.
+**Що зроблено:** Phase 2 rewritten після user insight. T-PH2-W1+W2+W3 (water+land+two-layer mechanic) в одному PR. Blue water replaces grass, `cell.type: 'land'|'building'`, нова land pool, клік на воду → земля, клік на землю → будинок. Save v2 auto-invalidates v1. 129 unit + 80 E2E.
 
 ## Поточний стан
 - 🟢 Infra: repo + CI (3 джоби: test + e2e + deploy) + Pages + branch protection (required: Unit tests + E2E)
@@ -25,15 +25,17 @@
 - 🟢 **T-012 Done:** mode toggle UI, progressive disclosure, erase-feedback
 - 🟢 **fix/erase-hover:** outline на самому кубі, не сусідній клітинці
 - 🟢 **T-014 Done:** scale-in bounce + scale-out shrink, pinned-bottom geometry
-- 🟢 Tests: 122 unit + 74 E2E
-- 🔴 Далі — T-016 Random City (wow), T-018 Onboarding (P0 для 7-річки)
+- 🟢 **revert/phase2-visual Done:** Phase 2 bevels + AO відкочено (user preferred Phase 1 look)
+- 🟢 **T-PH2-W1+W2+W3 Done:** water background + land tile + two-layer mechanic
+- 🟢 Tests: 129 unit + 80 E2E
+- 🔴 Далі — T-PH2-W4 Land tile variants (corner/edge smooth contour) OR показати дітям first
 
 ## Deploy URL
 **https://stfalcon.github.io/townscaper-mvp/**
-Last deploy: 2026-04-21, T-014 merge (commit `c38fb20`). **Гра має juice** — кубики bounce-ають з землі на placement і зникають з shrink на remove.
+Last deploy: pending Phase 2 W1 merge. **Гра тепер Townscaper-подібна** — вода навколо, ти кладеш острів клацанням на воду, потім будуєш будиночки на землі.
 
 ## Наступна задача
-**T-016: Random City (2h)** — клавіша `R` → BFS-генератор 30-60 будинків з cascade-анімацією (stagger 40мс/клітинку). Головний wow-момент з Vision. TweenManager + scale animations уже є — тож cascade виглядатиме дуже добре.
+**T-PH2-W4 Land tile variants (3h)** — corner/edge/inner резолюція для землі як у merged roofs, щоб острова мали округлі краї, а не піксель-сходинки. Альтернатива — показати поточний стан дітям і зібрати feedback перед полішем.
 
 ## Blockers
 Немає. Очікую «ок» від user.
@@ -60,6 +62,9 @@ Last deploy: 2026-04-21, T-014 merge (commit `c38fb20`). **Гра має juice**
 | T-012 | ✅ Done | `6a5c3f7` (PR #15) | 2026-04-20 |
 | fix/erase-hover | ✅ Done | `5955ecf` (PR #16) | 2026-04-21 |
 | T-014 | ✅ Done | `c38fb20` (PR #17) | 2026-04-21 |
+| T-PH2-A1 (reverted) | ↩️ Reverted | PR #18 + #20 | 2026-04-21 |
+| T-PH2-A2 (reverted) | ↩️ Reverted | PR #19 + #20 | 2026-04-21 |
+| T-PH2-W1+W2+W3 | 🔄 In PR | (pending) | 2026-04-21 |
 
 ## Notes
 - Node 20 deprecation warning у Actions (non-blocking, fix до червня 2026)
