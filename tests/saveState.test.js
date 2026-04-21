@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { SaveState } from '../src/saveState.js';
 import { GameState } from '../src/gameState.js';
 import { TileResolver } from '../src/tileResolver.js';
+import { STORAGE_KEY } from '../src/constants.js';
 
 function makeStorage() {
   const store = new Map();
@@ -13,7 +14,7 @@ function makeStorage() {
   };
 }
 
-const KEY = 'townscaper-mvp-v1';
+const KEY = STORAGE_KEY;
 
 describe('SaveState', () => {
   let state, resolver, storage, save;
@@ -27,13 +28,13 @@ describe('SaveState', () => {
 
   describe('save (AC-F5-01, AC-F5-07)', () => {
     it('save writes versioned JSON with cells (no tileType)', () => {
-      state.setCell(5, 0, 5, { colorId: 2 });
+      state.setCell(5, 1, 5, { colorId: 2 });
       save.flush();
       expect(storage.setItem).toHaveBeenCalledTimes(1);
       const payload = JSON.parse(storage.store.get(KEY));
-      expect(payload.version).toBe('v1');
+      expect(payload.version).toBe('v2');
       expect(payload.cells).toHaveLength(1);
-      expect(payload.cells[0]).toEqual({ x: 5, y: 0, z: 5, colorId: 2 });
+      expect(payload.cells[0]).toMatchObject({ x: 5, y: 1, z: 5, colorId: 2, type: 'building' });
       expect(payload.cells[0].tileType).toBeUndefined(); // AC-F5-07
     });
 

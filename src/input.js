@@ -1,8 +1,11 @@
 import * as THREE from 'three';
 import { pickWithDDA } from './picking.js';
-import { CLICK_THRESHOLD, COLORS } from './constants.js';
+import { CLICK_THRESHOLD, COLORS, LAND_COLOR } from './constants.js';
 
 const COLOR_BY_ID = Object.fromEntries(COLORS.map((c) => [c.id, c.hex]));
+
+// Placement at y=0 is always LAND (water surface). y≥1 is a building.
+const typeForCoord = (coord) => (coord.y === 0 ? 'land' : 'building');
 
 /**
  * Wires pointer events to picking + hover + place/remove.
@@ -118,11 +121,13 @@ export class InputManager {
       valid = false; // always red in erase mode
       color = 0xff4444;
     } else {
-      // Build mode: highlight where a new cell would go.
+      // Build mode: highlight where a new cell would go. Y=0 → land preview
+      // (green), y≥1 → building preview (current palette color).
       if (!hit.placementCoord) { this._clearHover(); return; }
       coord = hit.placementCoord;
-      valid = this.state.canPlace(coord.x, coord.y, coord.z).ok;
-      color = COLOR_BY_ID[this.currentColorId] ?? 0xffffff;
+      const type = typeForCoord(coord);
+      valid = this.state.canPlace(coord.x, coord.y, coord.z, type).ok;
+      color = type === 'land' ? LAND_COLOR : (COLOR_BY_ID[this.currentColorId] ?? 0xffffff);
     }
 
     const key = `${coord.x}_${coord.y}_${coord.z}`;
@@ -185,8 +190,13 @@ export class InputManager {
   _doPlace(hit) {
     const c = hit.placementCoord;
     if (!c) return;
-    if (!this.state.canPlace(c.x, c.y, c.z).ok) return;
-    this.state.setCell(c.x, c.y, c.z, { colorId: this.currentColorId });
+    const type = typeForCoord(c);
+    if (!this.state.canPlace(c.x, c.y, c.z, type).ok) return;
+    if (type === 'land') {
+      this.state.setCell(c.x, c.y, c.z, { type: 'land' });
+    } else {
+      this.state.setCell(c.x, c.y, c.z, { colorId: this.currentColorId, type: 'building' });
+    }
   }
 
   _doRemove(hit, clientX, clientY) {

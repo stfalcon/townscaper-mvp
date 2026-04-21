@@ -1,4 +1,4 @@
-import { GRID_SIZE, MAX_HEIGHT, MAX_CELLS } from './constants.js';
+import { GRID_SIZE, MAX_HEIGHT, MAX_CELLS, LAND_COLOR_ID } from './constants.js';
 
 const EVENTS = ['cellChanged', 'cellResolved', 'loaded'];
 
@@ -18,7 +18,7 @@ export class GameState {
     return this.#cells.get(this.#key(x, y, z)) ?? null;
   }
 
-  canPlace(x, y, z) {
+  canPlace(x, y, z, type = 'building') {
     if (x < 0 || x >= GRID_SIZE || z < 0 || z >= GRID_SIZE) {
       return { ok: false, reason: 'out-of-bounds' };
     }
@@ -31,18 +31,28 @@ export class GameState {
     if (this.#cells.size >= MAX_CELLS) {
       return { ok: false, reason: 'too-many' };
     }
-    if (y > 0) {
-      const hasSupport =
-        this.#has(x, y - 1, z) ||
-        this.#has(x - 1, y, z) || this.#has(x + 1, y, z) ||
-        this.#has(x, y, z - 1) || this.#has(x, y, z + 1);
-      if (!hasSupport) return { ok: false, reason: 'no-support' };
+    if (type === 'land') {
+      // Land only at water level (y=0). No support required — islands may seed
+      // anywhere on water.
+      if (y !== 0) return { ok: false, reason: 'land-y-must-be-zero' };
+      return { ok: true };
     }
+    // building:
+    // Must sit on something — land or another building, directly below or to
+    // the side at the same y. Floating at y=0 is not allowed: water has no
+    // structural support, so buildings require land first.
+    if (y === 0) return { ok: false, reason: 'building-needs-land' };
+    const hasSupport =
+      this.#has(x, y - 1, z) ||
+      this.#has(x - 1, y, z) || this.#has(x + 1, y, z) ||
+      this.#has(x, y, z - 1) || this.#has(x, y, z + 1);
+    if (!hasSupport) return { ok: false, reason: 'no-support' };
     return { ok: true };
   }
 
-  setCell(x, y, z, { colorId }) {
-    const cell = Object.freeze({ x, y, z, colorId, tileType: null });
+  setCell(x, y, z, { colorId, type = 'building' }) {
+    const effectiveColorId = type === 'land' ? LAND_COLOR_ID : colorId;
+    const cell = Object.freeze({ x, y, z, colorId: effectiveColorId, type, tileType: null });
     this.#cells.set(this.#key(x, y, z), cell);
     this.#emit('cellChanged', { op: 'add', cell });
     return cell;
@@ -90,8 +100,8 @@ export class GameState {
 
   toJSON() {
     return {
-      version: 'v1',
-      cells: this.all().map(({ x, y, z, colorId }) => ({ x, y, z, colorId })),
+      version: 'v2',
+      cells: this.all().map(({ x, y, z, colorId, type }) => ({ x, y, z, colorId, type })),
     };
   }
 
@@ -104,8 +114,10 @@ export class GameState {
     }
     for (const c of cells) {
       if (typeof c?.x !== 'number') continue;
+      const type = c.type === 'land' ? 'land' : 'building';
+      const colorId = type === 'land' ? LAND_COLOR_ID : c.colorId;
       const cell = Object.freeze({
-        x: c.x, y: c.y, z: c.z, colorId: c.colorId, tileType: null,
+        x: c.x, y: c.y, z: c.z, colorId, type, tileType: null,
       });
       this.#cells.set(this.#key(c.x, c.y, c.z), cell);
     }

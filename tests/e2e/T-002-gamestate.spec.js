@@ -30,14 +30,15 @@ test.describe('T-002: GameState module in browser', () => {
       s1.on('cellChanged', (d) => events.push(`ch:${d.op}`));
       s1.on('cellResolved', (d) => events.push(`rs:${d.cell.tileType}`));
 
-      s1.setCell(5, 0, 5, { colorId: 2 });
-      s1.updateTile(5, 0, 5, 'roof');
-      s1.setCell(6, 0, 5, { colorId: 3 });
+      s1.setCell(5, 0, 5, { type: 'land' });
+      s1.updateTile(5, 0, 5, 'land');
+      s1.setCell(5, 1, 5, { colorId: 2 });
+      s1.updateTile(5, 1, 5, 'roof');
       const json = s1.toJSON();
 
       const s2 = new GameState();
       s2.fromJSON(json);
-      const restored = s2.getCell(5, 0, 5);
+      const restored = s2.getCell(5, 1, 5);
 
       return {
         events,
@@ -47,33 +48,37 @@ test.describe('T-002: GameState module in browser', () => {
         totalRestored: s2.all().length,
       };
     });
-    expect(result.events).toEqual(['ch:add', 'rs:roof', 'ch:add']);
+    expect(result.events).toEqual(['ch:add', 'rs:land', 'ch:add', 'rs:roof']);
     expect(result.jsonHasNoTileType).toBe(true);
     expect(result.restoredColorId).toBe(2);
     expect(result.restoredTileTypeIsNull).toBe(true);
     expect(result.totalRestored).toBe(2);
   });
 
-  test('canPlace rules match TDD §3.2', async ({ page }) => {
+  test('canPlace rules match TDD §3.2 + land-first rule', async ({ page }) => {
     await page.goto('/');
     const results = await page.evaluate(async () => {
       const { GameState } = await import('/src/gameState.js');
       const s = new GameState();
-      s.setCell(5, 0, 5, { colorId: 1 });
+      s.setCell(5, 0, 5, { type: 'land' });
       return {
-        inBounds: s.canPlace(10, 0, 10),
+        landInBounds: s.canPlace(10, 0, 10, 'land'),
+        landAboveZero: s.canPlace(10, 1, 10, 'land'),
         outOfBounds: s.canPlace(-1, 0, 5),
-        occupied: s.canPlace(5, 0, 5),
+        buildingAtYZero: s.canPlace(10, 0, 10),
+        occupiedLand: s.canPlace(5, 0, 5, 'land'),
         noSupport: s.canPlace(15, 5, 15),
         tooHigh: s.canPlace(5, 10, 5),
-        withSupportFromBelow: s.canPlace(5, 1, 5),
+        buildingOnLand: s.canPlace(5, 1, 5),
       };
     });
-    expect(results.inBounds).toEqual({ ok: true });
+    expect(results.landInBounds).toEqual({ ok: true });
+    expect(results.landAboveZero).toEqual({ ok: false, reason: 'land-y-must-be-zero' });
     expect(results.outOfBounds).toEqual({ ok: false, reason: 'out-of-bounds' });
-    expect(results.occupied).toEqual({ ok: false, reason: 'occupied' });
+    expect(results.buildingAtYZero).toEqual({ ok: false, reason: 'building-needs-land' });
+    expect(results.occupiedLand).toEqual({ ok: false, reason: 'occupied' });
     expect(results.noSupport).toEqual({ ok: false, reason: 'no-support' });
     expect(results.tooHigh).toEqual({ ok: false, reason: 'too-high' });
-    expect(results.withSupportFromBelow).toEqual({ ok: true });
+    expect(results.buildingOnLand).toEqual({ ok: true });
   });
 });

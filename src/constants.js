@@ -12,7 +12,12 @@ export const COLORS = [
   { id: 6, hex: 0xFF6B3D, name: 'Surprise', unlockAfter: 10 },
 ];
 
-export const TILE_TYPES = ['freestanding', 'wall', 'corner', 'roof'];
+// Reserved colorId for 'land' cells — not selectable in palette, fixed hue.
+export const LAND_COLOR_ID = 0;
+export const LAND_COLOR = 0x9EBF7C;
+
+export const TILE_TYPES = ['freestanding', 'wall', 'corner', 'roof', 'land'];
+export const BUILDING_TILE_TYPES = ['freestanding', 'wall', 'corner', 'roof'];
 
 export const ANIM = {
   place: 250,
@@ -28,7 +33,7 @@ export const CLICK_THRESHOLD = {
   maxDuration: 300,
 };
 
-export const STORAGE_KEY = 'townscaper-mvp-v1';
+export const STORAGE_KEY = 'townscaper-mvp-v2';
 export const SAVE_DEBOUNCE_MS = 2000;
 
 export const CAMERA = {
@@ -47,4 +52,5 @@ export const PALETTE = {
   shadow: 0x4A3A2E,
   lightDirectional: 0xFFF8EB,
   lightAmbient: 0xB8C8D4,
+  water: 0x6BA6C9,
 };

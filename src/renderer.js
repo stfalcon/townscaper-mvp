@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import {
   GRID_SIZE, CAMERA, PALETTE, COLORS, TILE_TYPES, MAX_CELLS, ANIM,
+  LAND_COLOR_ID, LAND_COLOR,
 } from './constants.js';
 import { TweenManager, easeInOutCubic, easeOutQuad, easeOutBack, easeInQuad } from './tween.js';
 
@@ -10,13 +11,14 @@ const ZOOM_MAX = 2.0;
 const ZOOM_STEP = 0.1;
 const ZOOM_DURATION = 150;
 
-const COLOR_RGB = Object.fromEntries(
-  COLORS.map((c) => [c.id, [
-    ((c.hex >> 16) & 0xff) / 255,
-    ((c.hex >> 8) & 0xff) / 255,
-    (c.hex & 0xff) / 255,
-  ]]),
-);
+const hexToRGB = (hex) => [
+  ((hex >> 16) & 0xff) / 255,
+  ((hex >> 8) & 0xff) / 255,
+  (hex & 0xff) / 255,
+];
+
+const COLOR_RGB = Object.fromEntries(COLORS.map((c) => [c.id, hexToRGB(c.hex)]));
+COLOR_RGB[LAND_COLOR_ID] = hexToRGB(LAND_COLOR);
 
 function cellKey(cell) {
   return `${cell.x}_${cell.y}_${cell.z}`;
@@ -45,6 +47,14 @@ function makeCornerGeometry() {
   // Plain 1×1×1 for the same gap-avoidance reason as freestanding.
   // Corner visual differentiation deferred to a future task where
   // we'd need per-face vertex manipulation (not shape scaling).
+  return new THREE.BoxGeometry(1, 1, 1);
+}
+
+function makeLandGeometry() {
+  // Plain 1×1×1 box. Land fills the y=0 slot like a building would a y=1
+  // slot — its top face is at cell.y+1 so buildings at y+1 sit flush.
+  // Visual differentiation comes from the LAND_COLOR (sage-green) vs
+  // building palette, not geometry.
   return new THREE.BoxGeometry(1, 1, 1);
 }
 
@@ -279,12 +289,16 @@ export class Renderer {
   }
 
   #setupGround() {
+    // Water covers the grid at y=0. Land cells rise from y=0..1 above it;
+    // buildings stack from y=1 upwards. We offset the plane by -0.01 to
+    // avoid z-fighting with land cell bottoms.
     const geo = new THREE.PlaneGeometry(GRID_SIZE, GRID_SIZE);
-    const mat = new THREE.MeshLambertMaterial({ color: PALETTE.grass });
-    const ground = new THREE.Mesh(geo, mat);
-    ground.rotation.x = -Math.PI / 2;
-    ground.position.set(GRID_SIZE / 2, 0, GRID_SIZE / 2);
-    this.scene.add(ground);
+    const mat = new THREE.MeshLambertMaterial({ color: PALETTE.water });
+    const water = new THREE.Mesh(geo, mat);
+    water.rotation.x = -Math.PI / 2;
+    water.position.set(GRID_SIZE / 2, -0.01, GRID_SIZE / 2);
+    this.scene.add(water);
+    this.water = water;
   }
 
   #setupPools() {
@@ -298,6 +312,7 @@ export class Renderer {
       wall: makeWallGeometry(),
       corner: makeCornerGeometry(),
       roof: makeRoofGeometry(),
+      land: makeLandGeometry(),
     };
 
     this.pools = {};
