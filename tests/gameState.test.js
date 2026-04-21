@@ -55,9 +55,33 @@ describe('GameState', () => {
         expect(state.canPlace(5, 1, 5, 'land')).toEqual({ ok: false, reason: 'land-y-must-be-zero' });
       });
 
-      it('land does NOT require neighbor support — seed islands anywhere', () => {
-        // No neighbors at all — still ok.
+      it('first land cell seeds anywhere (no support required)', () => {
         expect(state.canPlace(10, 0, 10, 'land')).toEqual({ ok: true });
+      });
+
+      it('second land must connect to existing land (orthogonally)', () => {
+        state.setCell(10, 0, 10, { type: 'land' });
+        // Disjoint — rejected.
+        expect(state.canPlace(20, 0, 20, 'land'))
+          .toEqual({ ok: false, reason: 'land-not-connected' });
+        // Adjacent — accepted.
+        expect(state.canPlace(11, 0, 10, 'land')).toEqual({ ok: true });
+        expect(state.canPlace(10, 0, 11, 'land')).toEqual({ ok: true });
+      });
+
+      it('diagonal adjacency does not count (must be orthogonal)', () => {
+        state.setCell(10, 0, 10, { type: 'land' });
+        expect(state.canPlace(11, 0, 11, 'land'))
+          .toEqual({ ok: false, reason: 'land-not-connected' });
+      });
+
+      it('buildings do not satisfy land neighbor requirement', () => {
+        state.setCell(10, 0, 10, { type: 'land' });
+        state.setCell(10, 1, 10, { colorId: 1, type: 'building' });
+        // Building at (10,1,10) sits above the single seed — the neighbor
+        // check at y=0 still looks for land at (11,0,10) etc., not buildings.
+        expect(state.canPlace(12, 0, 10, 'land'))
+          .toEqual({ ok: false, reason: 'land-not-connected' });
       });
 
       it('rejects occupied land cell', () => {

@@ -90,6 +90,25 @@ test.describe('T-PH2-W1: water + land two-layer mechanic', () => {
     expect(ok.reason).toBe('building-needs-land');
   });
 
+  test('new land must connect to existing island (no disjoint archipelagos)', async ({ page }) => {
+    await page.goto('/?fresh=1');
+    await page.waitForSelector('canvas#canvas');
+
+    const result = await page.evaluate(() => {
+      const s = window.__game__.state;
+      // Seed first island.
+      s.setCell(10, 0, 10, { type: 'land' });
+      // A far-away patch should be blocked.
+      const disjoint = s.canPlace(20, 0, 20, 'land');
+      // Adjacent extension is allowed.
+      const connected = s.canPlace(11, 0, 10, 'land');
+      return { disjoint, connected };
+    });
+
+    expect(result.disjoint).toEqual({ ok: false, reason: 'land-not-connected' });
+    expect(result.connected).toEqual({ ok: true });
+  });
+
   test('save/load round-trip preserves land+building types', async ({ page }) => {
     await page.goto('/?fresh=1');
     await page.waitForSelector('canvas#canvas');
