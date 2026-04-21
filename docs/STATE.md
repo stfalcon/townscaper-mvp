@@ -64,7 +64,9 @@ Last deploy: pending Phase 2 W1 merge. **Гра тепер Townscaper-подіб
 | T-014 | ✅ Done | `c38fb20` (PR #17) | 2026-04-21 |
 | T-PH2-A1 (reverted) | ↩️ Reverted | PR #18 + #20 | 2026-04-21 |
 | T-PH2-A2 (reverted) | ↩️ Reverted | PR #19 + #20 | 2026-04-21 |
-| T-PH2-W1+W2+W3 | 🔄 In PR | (pending) | 2026-04-21 |
+| T-PH2-W1+W2+W3 | ✅ Done | `2bc4e3c` (PR #21) | 2026-04-21 |
+| T-PH2-W1b | ✅ Done | (PR #22) | 2026-04-21 |
+| T-PH2-RC | ✅ Done | (PR #23) | 2026-04-21 |
 
 ## Notes
 - Node 20 deprecation warning у Actions (non-blocking, fix до червня 2026)
