@@ -426,6 +426,290 @@ _Після додавання Ops-задач + TileResolver + T-CAM + T-010: ~5
 
 ---
 
+## Phase 2 v2 — Townscaper-look на регулярній сітці (post cross-review)
+
+**Ціль:** візуально наблизитись до Townscaper зберігаючи 30×30 сітку. Три спринти + Ops, **18 задач, ~28.5 годин** (після 5-агентного cross-review).
+
+**Ключові архітектурні рішення (з ревʼю):**
+- `cell.tileType` НЕ розширюється — залишається 4 значень. Нове поле **`cell.roofVariant`** ∈ `null | single | ridge-NS | ridge-EW | hip-L | hip-T | flat`.
+- Bevel-геометрії через **`RoundedBoxGeometry` + flatten bottom**, НЕ `ExtrudeGeometry`.
+- Контактні тіні **baked у ground DataTexture**, НЕ per-cell transparent planes (Intel UHD fillrate).
+- `DecorationsManager` з dual-subscription (cellResolved + cellChanged remove).
+- Decoration density cap 30% + progressive unlock після 20 placements.
+- Dirty-flag batching на buffer uploads.
+- O(1) `cellToPool` Map замість O(9) scan.
+- Bevel size 0.10 (не 0.06 — було невидимо при звичайному зумі).
+
+### Sprint 2A — Polish (~5h)
+
+#### T-PH2-A1: Bevel-геометрії для 4 tileType (заокруглені краї)
+**Epic:** E-PH2 | **Estimate:** 3h | **Priority:** P0 | **Dependencies:** —
+
+**Опис:** Замінити `BoxGeometry(1,1,1)` на кастомний bevel-box. Використати `ExtrudeGeometry` з квадратним shape, `bevelEnabled:true, bevelSize:0.06, bevelThickness:0.06, bevelSegments:2`. Bevel тільки на TOP + VERTICAL edges; BOTTOM плоский (no-gap invariant).
+
+**DoD:**
+- [ ] 4 геометрії (wall/freestanding/corner/roof) — bevel видимий
+- [ ] bbox span [−0.5, +0.5] на XYZ зберігається (regression E2E)
+- [ ] T-005 instanceColor test зелений (color multiplication працює)
+- [ ] Screenshot до/після для візуального порівняння
+
+**Файли:** `src/renderer.js` — `makeWallGeometry`, `makeFreestandingGeometry`, `makeCornerGeometry`, `makeRoofGeometry`
+
+---
+
+#### T-PH2-A2: Vertex AO (тіні у закутках)
+**Epic:** E-PH2 | **Estimate:** 1h | **Priority:** P0 | **Dependencies:** T-PH2-A1
+
+**Опис:** `BufferAttribute('color', 3)` для кожної геометрії: bottom vertices × 0.75, edge/corner × 0.88, top × 1.0. Material `vertexColors: true` + `instanceColor` — фінальний колір мулитиплікативний.
+
+**DoD:**
+- [ ] AO видимий візуально (нижні грані темніші)
+- [ ] `instanceColor` продовжує працювати (всі 5 кольорів палітри видимі)
+- [ ] Regression T-005 пули test зелений
+
+**Файли:** `src/renderer.js` — `_applyVertexAO(geometry)` helper
+
+---
+
+#### T-PH2-A3: Тепле вечірнє освітлення
+**Epic:** E-PH2 | **Estimate:** 0.5h | **Priority:** P0 | **Dependencies:** —
+
+**Опис:** Параметри Three.js lights:
+- Directional: `0xFFE8CC`, intensity 1.1
+- Ambient: `0xE8D8C0`, intensity 0.35
+- Hemisphere: sky `0xF2E8D0`, ground `0x9BA585`, intensity 0.35
+- Background: `0xE8D8C0`
+
+**DoD:**
+- [ ] Сцена виглядає «вечірньо-тепло» (субʼєктивно — playtesting)
+- [ ] Кольори палітри читаються (не занадто жовті)
+- [ ] Скріншот порівняння
+
+**Файли:** `src/renderer.js` `#setupLights()`, `src/constants.js` PALETTE
+
+---
+
+#### T-PH2-A4: Контактні тіні під кубами
+**Epic:** E-PH2 | **Estimate:** 0.5h | **Priority:** P1 | **Dependencies:** T-PH2-A3
+
+**Опис:** Під кожну ground-level клітинку — прозорий quad з radial gradient shadow. Texture згенерована `THREE.CanvasTexture` (64×64 canvas з radial gradient, 0 файлів). Один `InstancedMesh` pool `shadowPool` з `PlaneGeometry(1.2, 1.2)`, rotated -π/2, y=0.01.
+
+**DoD:**
+- [ ] Контактні тіні під кожним ground cell
+- [ ] Лише для y===0 (upper floors не потребують)
+- [ ] Не з-файтинг з ground plane
+- [ ] FPS не падає (1 додатковий instanced mesh)
+
+**Файли:** `src/renderer.js` — `#setupContactShadows()`, `shadowPool`
+
+---
+
+### Sprint 2B — Merged Roofs (~8h)
+
+#### T-PH2-B1: resolveRoofVariant logic + tests
+**Epic:** E-PH2 | **Estimate:** 2h | **Priority:** P0 | **Dependencies:** —
+
+**Опис:** Нова функція `resolveRoofVariant(cell, neighbors)` у `src/tileLogic.js`. Повертає один з 6 варіантів на основі roof-сусідів (ключ — які cells з neighbors-same-level мають tileType.startsWith('roof')):
+- 0 roof-сусідів → `roof-single`
+- 1 по N/S → `roof-ridge-NS`
+- 1 по E/W → `roof-ridge-EW`
+- 2 лінійно (NS або EW з обох сторін) → `roof-ridge-NS` / `roof-ridge-EW`
+- 2 перпендикулярно (1 N/S + 1 E/W) → `roof-hip-L`
+- 3 → `roof-hip-T`
+- 4 → `roof-flat`
+
+**DoD:**
+- [ ] Unit тести покривають всі 7 кейсів (6 variants + edge cases симетрії)
+- [ ] Integration test: placing neighbor змінює variant
+- [ ] Existing tileLogic tests (T-003) зелені
+
+**Файли:** `src/tileLogic.js`, `tests/tileLogic.test.js`
+
+---
+
+#### T-PH2-B2: roof-single bevel geometry
+**Epic:** E-PH2 | **Estimate:** 0.5h | **Priority:** P1 | **Dependencies:** T-PH2-A1
+
+**Опис:** Оновити існуючий `makeRoofGeometry` (базовий roof) з bevel-ами на основі + pyramid. Використовується для `roof-single` variant.
+
+**DoD:** bbox correct, pyramid sharp, base bevelled, screenshot
+
+**Файли:** `src/renderer.js`
+
+---
+
+#### T-PH2-B3: roof-ridge-NS/EW geometries
+**Epic:** E-PH2 | **Estimate:** 1h | **Priority:** P1 | **Dependencies:** T-PH2-B2
+
+**Опис:** Дві нові геометрії: `makeRoofRidgeNS`, `makeRoofRidgeEW`. Base 1×0.7×1 + призма-прямокутник з ridge уздовж відповідної осі (Z для NS, X для EW). Apex ridge-line має висоту 1.3.
+
+**DoD:**
+- [ ] NS: ridge-line проходить (x=0.5, y=1.3, z=[0, 1])
+- [ ] EW: ridge-line проходить (x=[0, 1], y=1.3, z=0.5)
+- [ ] bbox span XYZ коректний, height 1.3
+
+**Файли:** `src/renderer.js`
+
+---
+
+#### T-PH2-B4: roof-hip-L geometry (кут з поворотом ridge)
+**Epic:** E-PH2 | **Estimate:** 1h | **Priority:** P1 | **Dependencies:** T-PH2-B3
+
+**Опис:** L-подібний hip-roof. Base + 2 нахилені площини, які сходяться у один corner (ridge line має згин на 90°). Custom BufferGeometry — важче ExtrudeGeometry, треба вручну vertex + triangle indices.
+
+**DoD:** Два роз'їдні face-plane сходяться у diagonal ridge
+
+**Файли:** `src/renderer.js`
+
+---
+
+#### T-PH2-B5: roof-hip-T geometry (три сторони)
+**Epic:** E-PH2 | **Estimate:** 1h | **Priority:** P2 | **Dependencies:** T-PH2-B4
+
+**Опис:** T-подібний hip-roof — 3 нахилені площини сходяться у T-ridge. Для ground-level cell який має 2 лінійних + 1 перпендикулярний roof-сусід.
+
+**DoD:** 3 face-planes meet at T-junction; bbox OK
+
+**Файли:** `src/renderer.js`
+
+---
+
+#### T-PH2-B6: roof-flat geometry
+**Epic:** E-PH2 | **Estimate:** 0.5h | **Priority:** P2 | **Dependencies:** —
+
+**Опис:** Просто коробка 1×1×1 (bevelled) без піраміди. Для cells оточених з 4 сторін roof-сусідами (internal of roof-cluster).
+
+**DoD:** Плоский top face, бокс full-height 1.0
+
+**Файли:** `src/renderer.js`
+
+---
+
+#### T-PH2-B7: Renderer 9-pool dispatch
+**Epic:** E-PH2 | **Estimate:** 2h | **Priority:** P0 | **Dependencies:** T-PH2-B1..B6
+
+**Опис:** Розширити `#setupPools` з 4 до 9 пулів (wall, freestanding, corner + 6 roof-variants). `#onCellResolved` дистпатчить на правильний пул за `cell.tileType` який тепер може бути `'roof-ridge-NS'` тощо. Міграція між roof-variants коли сусід-roof ставиться/знімається.
+
+**DoD:**
+- [ ] 9 InstancedMesh пулів у сцені
+- [ ] FPS ≥60 при 500 cells на M1 (9 draw calls — має витримати)
+- [ ] FPS ≥30 при 500 cells на Intel UHD (target ноут батьків)
+- [ ] Міграція roof-single → roof-ridge при placement сусіда (E2E)
+- [ ] Scale tweens (T-014) продовжують працювати
+
+**Файли:** `src/renderer.js`, `src/constants.js` TILE_TYPES
+
+---
+
+### Sprint 2C — Decorations (~6h)
+
+#### T-PH2-C1: Deterministic decision module
+**Epic:** E-PH2 | **Estimate:** 1h | **Priority:** P0 | **Dependencies:** —
+
+**Опис:** `src/decorations.js` — `decorationsFor(cell, neighbors)` повертає `{window, chimney, door, plant}` booleans. Використовує seeded hash(cellKey) з murmur3-4byte inline — детерміністично per cellKey щоб re-tile не мигтив декор.
+
+**DoD:**
+- [ ] Unit тест: `decorationsFor(cellA)` завжди повертає те саме
+- [ ] Probabilities: window 15%, chimney 10%, door 5%, plant 7%
+- [ ] Conditional: chimney/plant тільки для roof-*, door для y===0, window для exposed-wall
+
+**Файли:** `src/decorations.js`, `tests/decorations.test.js`
+
+---
+
+#### T-PH2-C2: Decoration meshes + 4 pools
+**Epic:** E-PH2 | **Estimate:** 3h | **Priority:** P1 | **Dependencies:** T-PH2-C1
+
+**Опис:** 4 нові InstancedMesh пули:
+- **Window**: `PlaneGeometry(0.3, 0.4)`, inset 0.02 у стіну, колір `0x2A2520`
+- **Chimney**: `BoxGeometry(0.2, 0.3, 0.2)`, offset на roof-edge, brick color `0x8B4513`
+- **Door**: `BoxGeometry(0.3, 0.6, 0.05)`, ground-level, dark brown `0x4A2E1A`
+- **Plant**: `CylinderGeometry(0.12, 0.15, 0.2, 8)`, roof-edge, green `0x4A7C3A`
+
+Кожен має свою allocate/free логіку, прикріпленим до parent cell через offset.
+
+**DoD:** 4 пули рендеряться, positions коректні, color distinct
+
+**Файли:** `src/renderer.js` — `decorations` map of pools
+
+---
+
+#### T-PH2-C3: Integration + feature flag
+**Epic:** E-PH2 | **Estimate:** 2h | **Priority:** P0 | **Dependencies:** T-PH2-C2, T-PH2-B7
+
+**Опис:** Hook у `#onCellResolved`: після main mesh allocation, викликати `decorationsFor(cell)` і allocate у відповідні decoration pools. При `cellRemoved` / `clear` — free decorations цієї cell. Feature flag `?decor=0` вимикає decorations entirely (для тестів і на слабкому залізі).
+
+**DoD:**
+- [ ] Decorations зʼявляються на ~15-30% cells
+- [ ] `?decor=0` вимикає їх (0 декорацій у scene)
+- [ ] Save/load відновлює без flickering (детермінізм працює)
+- [ ] FPS ≥30 Intel UHD з включеними decor
+
+**Файли:** `src/renderer.js`, `src/main.js`
+
+---
+
+### Phase 2 v2 Ops-tasks (з cross-review)
+
+#### T-PH2-VR: Visual regression infrastructure
+**Epic:** E-PH2 | **Estimate:** 2h | **Priority:** P0 | **Dependencies:** —
+
+**Опис:** Setup Playwright `toHaveScreenshot()` baseline-ів для Phase 2 features. Fixed camera + fixed seed + threshold 0.3%.
+
+**DoD:** 3 baseline screenshots (bevel close-up, merged roofs 3×3, decorations sample) у `tests/__screenshots__/`.
+
+---
+
+#### T-PH2-PERF: Manual Intel UHD performance validation
+**Epic:** E-PH2 | **Estimate:** 1h | **Priority:** P0 | **Dependencies:** T-PH2-C3
+
+**Опис:** `docs/phase2-perf-manual.md` — checklist для запуску на реальному Intel UHD 620 ноуті (батьківський). `?dev=1&spawn=500&decor=1` → 30с замір stats.js. Blocker для Phase 2 merge.
+
+**DoD:** ≥30 FPS avg, ≥25 FPS p95 на Intel UHD. Документовано thermal throttle behaviour.
+
+---
+
+#### T-PH2-REGR: Regression matrix + pool-stats compat
+**Epic:** E-PH2 | **Estimate:** 0.5h | **Priority:** P0 | **Dependencies:** T-PH2-B7
+
+**Опис:** Розширити `getPoolStats()` — додати `roof` convenience key = sum(6 roof-variants). Перевірити 13+ existing тестів що можуть ламатись (T-005, T-008, T-014, fix/horizontal-gaps, fix/erase-hover).
+
+**DoD:** Всі existing E2E+unit тести зелені, нова convenience key додана.
+
+---
+
+#### T-PH2-PALETTE: Palette-under-warm validation
+**Epic:** E-PH2 | **Estimate:** 0.5h | **Priority:** P0 | **Dependencies:** T-PH2-A3
+
+**Опис:** E2E screenshot з 5 palette кольорів × 3 tile types під новим warm lighting. Manual review — чи не muddy.
+
+**DoD:** Sage і Sky distinct (не сіро-коричневі). Якщо fail — adjust PALETTE колори або знизити ambient intensity.
+
+---
+
+### Phase 2 estimation summary v2
+
+| Sprint | Задачі | Години |
+|--------|--------|--------|
+| 2A Polish | T-PH2-A1..A4 | 6.5 |
+| 2B Merged Roofs | T-PH2-B1..B7 (roofVariant separate field, 2-phase resolve) | 10 |
+| 2C Decorations | T-PH2-C1..C3 (DecorationsManager + density cap + unlock) | 8 |
+| 2-Ops | T-PH2-VR, T-PH2-PERF, T-PH2-REGR, T-PH2-PALETTE | 4 |
+| **Разом Phase 2 v2** | **18 задач** | **~28.5 год** |
+
+Між спринтами можна зупинятись. Кожен sprint окрема гілка, PR-и інтегровані окремо з screenshot-ами.
+
+### Phase 2 cut-priority (v2)
+
+Якщо горить — ріжемо з кінця:
+1. T-PH2-C3 decorations integration (Sprint 2C цілком) — найбільший UX ризик
+2. T-PH2-B5/B6 hip-T + flat (fallback на roof-hip-L для цих кейсів)
+3. T-PH2-A4 baked shadows (ground без них читається теж OK)
+
+**Ніколи не ріжемо:** T-PH2-A1/A2/A3 (найбільший ROI), T-PH2-B1/B2/B3/B7 (merged roofs характерна фіча), T-PH2-VR/PERF (без них не знаємо що реально працює).
+
+---
+
 ## Пріоритет скорочення — переписано
 
 **Ріжемо з кінця (у порядку):**

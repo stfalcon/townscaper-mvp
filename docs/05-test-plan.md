@@ -329,6 +329,112 @@ THEN прогрес резетиться
   AND localStorage незмінений
 ```
 
+### F13: Phase 2 — Bevel geometries (planned)
+
+**AC-F13-01**: bevelled TOP + VERTICAL edges, flat BOTTOM
+```
+GIVEN оновлені геометрії (T-PH2-A1)
+WHEN inspected via mesh.geometry.boundingBox
+THEN bbox span is still [-0.5, +0.5] на всіх XYZ
+  AND vertex count > 8 (було 8 у plain BoxGeometry)
+  AND visual screenshot показує rounded top corners + vertical corners
+```
+
+**AC-F13-02**: no-gap invariant зберігається
+```
+GIVEN 2 adjacent cells (wall + wall)
+THEN між ними НЕМА grass-gap
+  (regression E2E — bbox span check)
+```
+
+**AC-F13-03**: Vertex AO + instanceColor multiply correctly
+```
+GIVEN геометрія з BufferAttribute('color') + InstancedMesh.instanceColor
+WHEN rendered
+THEN cube-bottom є темнішим за cube-top (visual check)
+  AND 5 palette colors все ще розрізняються на палітрі
+```
+
+### F14: Phase 2 — Merged Roofs (planned)
+
+**AC-F14-01**: resolveRoofVariant (data-driven, 7 кейсів)
+```
+GIVEN test fixture:
+  [
+    { rfN:0, rfS:0, rfE:0, rfW:0, expected: 'roof-single' },
+    { rfN:1, rfS:0, rfE:0, rfW:0, expected: 'roof-ridge-NS' },
+    { rfN:0, rfS:1, rfE:0, rfW:0, expected: 'roof-ridge-NS' },
+    { rfN:0, rfS:0, rfE:1, rfW:0, expected: 'roof-ridge-EW' },
+    { rfN:1, rfS:0, rfE:1, rfW:0, expected: 'roof-hip-L' },
+    { rfN:1, rfS:1, rfE:1, rfW:0, expected: 'roof-hip-T' },
+    { rfN:1, rfS:1, rfE:1, rfW:1, expected: 'roof-flat' },
+  ]
+WHEN resolveRoofVariant
+THEN всі кейси матчать expected
+```
+
+**AC-F14-02**: Роз roof variant змінюється при placement сусіда
+```
+GIVEN roof у (5,0,5) з tileType='roof-single'
+WHEN ставимо нову cell (6,0,5) → стане roof
+THEN обидві cells переоцінюються
+  AND (5,0,5) → 'roof-ridge-EW'
+  AND (6,0,5) → 'roof-ridge-EW'
+```
+
+**AC-F14-03**: 9 pools render correctly
+```
+GIVEN 3×3 ground cluster (9 cells)
+WHEN all cells resolved
+THEN pool counts:
+  - wall: 0 (немає above)
+  - roof-flat: 1 (центральна, 4 roof-сусіди)
+  - roof-ridge-EW: 4 (edge cells з 1 roof-сусідом уздовж x)
+  - roof-hip-L: 4 (corner cells з 2 сусідами)
+  - total: 9
+```
+
+**AC-F14-04**: FPS регресія
+```
+GIVEN 500 cells на M1 Mac, Chrome
+THEN FPS ≥60 (9 draw calls замість 4 — прийнятно)
+GIVEN 500 cells на Intel UHD 620
+THEN FPS ≥30
+```
+
+### F15: Phase 2 — Decorations (planned)
+
+**AC-F15-01**: Deterministic decorationsFor
+```
+GIVEN cell (5, 0, 5)
+WHEN decorationsFor(cell) викликана 10 разів у різний час
+THEN returns identical {window, chimney, door, plant} кожен раз
+```
+
+**AC-F15-02**: Re-tile не мигтить декорації
+```
+GIVEN cell з декорацією window=true
+WHEN сусід ставиться (змінюється tileType cell-а)
+THEN decoration залишається window=true
+  AND visually не мигтить (window instance зберігається)
+```
+
+**AC-F15-03**: ?decor=0 feature flag
+```
+GIVEN URL з ?decor=0
+WHEN 20 cells placed
+THEN 0 decoration instances allocated
+  AND main cell rendering незмінений
+```
+
+**AC-F15-04**: Decoration pools scale
+```
+GIVEN 500 cells з decor enabled
+WHEN rendered
+THEN ~15-30% cells мають принаймні 1 decoration
+  AND FPS ≥30 на Intel UHD 620
+```
+
 ### F8: Hover-preview
 
 **AC-F8-01**: Hover на порожній клітинці

@@ -32,8 +32,17 @@
 **https://stfalcon.github.io/townscaper-mvp/**
 Last deploy: 2026-04-21, T-014 merge (commit `c38fb20`). **Гра має juice** — кубики bounce-ають з землі на placement і зникають з shrink на remove.
 
-## Наступна задача
-**T-016: Random City (2h)** — клавіша `R` → BFS-генератор 30-60 будинків з cascade-анімацією (stagger 40мс/клітинку). Головний wow-момент з Vision. TweenManager + scale animations уже є — тож cascade виглядатиме дуже добре.
+## Phase 2 планується (Townscaper-look на регулярній сітці)
+
+User затвердив план Phase 2 — візуально наблизитись до Townscaper зберігаючи 30×30 сітку. 14 задач у 3-х спринтах, ~19 годин.
+
+- **Sprint 2A (5h):** bevel-геометрії + vertex AO + тепле світло + контактні тіні
+- **Sprint 2B (8h):** 6 roof-варіантів (single/ridge-NS/ridge-EW/hip-L/hip-T/flat) що зливаються коли roof-сусіди
+- **Sprint 2C (6h):** декорації (вікна / димарі / двері / квіти) з deterministic hash-based decisions
+
+**Зараз — Phase 2.0 pre-validation:** docs оновлено (backlog + TDD §3.10a/§3.11 + test-plan F13/F14/F15). Далі cross-review з 5 профільними агентами → врахування findings → approval → Phase 2.1 execution.
+
+T-016 Random City залишаємо на ПІСЛЯ Phase 2 бо тоді cascade буде виглядати у повному новому візуалі.
 
 ## Blockers
 Немає. Очікую «ок» від user.
