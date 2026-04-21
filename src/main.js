@@ -15,9 +15,10 @@ const params = new URLSearchParams(window.location.search);
 const state = new GameState();
 const resolver = new TileResolver(state);   // priority=1
 const renderer = new Renderer(canvas, state); // priority=2, 3
-const input = new InputManager({ canvas, camera: renderer.camera, state, renderer });
+const saveState = new SaveState({ state, resolver, ui: null }); // priority=6 — ui wired below
+const input = new InputManager({ canvas, camera: renderer.camera, state, renderer, saveState });
 const ui = new UI({ state, input });           // priority=5
-const saveState = new SaveState({ state, resolver, ui }); // priority=6
+saveState.ui = ui;
 saveState.attach();
 
 // Restore previous session BEFORE rendering starts to avoid flicker.

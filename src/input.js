@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { pickWithDDA } from './picking.js';
 import { CLICK_THRESHOLD, COLORS, LAND_COLOR } from './constants.js';
+import { generateCity } from './cityGen.js';
 
 const COLOR_BY_ID = Object.fromEntries(COLORS.map((c) => [c.id, c.hex]));
 
@@ -18,11 +19,12 @@ const typeForCoord = (coord) => (coord.y === 0 ? 'land' : 'building');
  * - Hover: outline tracks the pointer; red tint when canPlace fails.
  */
 export class InputManager {
-  constructor({ canvas, camera, state, renderer }) {
+  constructor({ canvas, camera, state, renderer, saveState = null }) {
     this.canvas = canvas;
     this.camera = camera;
     this.state = state;
     this.renderer = renderer;
+    this.saveState = saveState;
 
     /** Public tweakable settings (palette/mode UI wires these later). */
     this.currentColorId = 1;
@@ -67,7 +69,23 @@ export class InputManager {
     } else if (k === 'e') {
       this.renderer.rotateCamera('right');
       e.preventDefault();
+    } else if (k === 'r') {
+      this._generateRandomCity();
+      e.preventDefault();
     }
+  }
+
+  /**
+   * Wipe the current scene and spawn a seeded island+town cascade. The save
+   * system is paused during the scheduled placements to keep localStorage
+   * writes from thrashing; it resumes (and flushes) when the cascade ends.
+   */
+  _generateRandomCity() {
+    this.state.clear();
+    const save = this.saveState;
+    save?.pause?.();
+    const { durationMs } = generateCity({ state: this.state });
+    setTimeout(() => save?.resume?.(), durationMs + 100);
   }
 
   _onWheel(e) {
