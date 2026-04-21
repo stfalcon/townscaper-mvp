@@ -1,13 +1,9 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import {
   GRID_SIZE, CAMERA, PALETTE, COLORS, TILE_TYPES, MAX_CELLS, ANIM,
 } from './constants.js';
 import { TweenManager, easeInOutCubic, easeOutQuad, easeOutBack, easeInQuad } from './tween.js';
-
-const BEVEL_RADIUS = 0.10; // 10% — visible at dimetric 30° zoom (frontend review: 0.06 was too subtle)
-const BEVEL_SEGMENTS = 2;  // smoothness tradeoff vs vertex count
 
 const ZOOM_MIN = 0.5;
 const ZOOM_MAX = 2.0;
@@ -31,71 +27,41 @@ function cellKey(cell) {
 // Each cell slot is a 1×1×1 world unit. Instances are positioned at
 // (x+0.5, y+0.5, z+0.5). Geometry is centered at origin; translate() is
 // relative to that center. Heights differ ≥15% to satisfy T-008 DoD.
-//
-// Phase 2 (T-PH2-A1): bevel-box via RoundedBoxGeometry. We DON'T use
-// ExtrudeGeometry because it bevels both caps symmetrically (would pillow
-// the bottom and violate no-gap invariant). Instead: round the box on all
-// sides, then FLATTEN bottom vertices to y=-0.5 so cells sit flush on the
-// ground and on each other when stacked.
-
-/**
- * Flatten vertices whose y is below the threshold back to y=-0.5.
- * Preserves no-gap invariant (T-008 hotfix). Mutates in place.
- */
-function flattenBottom(geometry, threshold = -0.45) {
-  const pos = geometry.attributes.position;
-  const arr = pos.array;
-  for (let i = 1; i < arr.length; i += 3) { // y components
-    if (arr[i] < threshold) arr[i] = -0.5;
-  }
-  pos.needsUpdate = true;
-  geometry.computeVertexNormals(); // recompute normals after flattening
-  return geometry;
-}
-
-/**
- * Bevelled 1×1×1 box with flat bottom. Per frontend review: RoundedBoxGeometry
- * + flatten bottom is correct approach; ExtrudeGeometry bevels both caps and
- * breaks no-gap invariant.
- */
-function makeBevelBox(width = 1, height = 1, depth = 1, radius = BEVEL_RADIUS) {
-  const g = new RoundedBoxGeometry(width, height, depth, BEVEL_SEGMENTS, radius);
-  flattenBottom(g);
-  return g;
-}
 
 function makeWallGeometry() {
-  return makeBevelBox();
+  return new THREE.BoxGeometry(1, 1, 1);
 }
 
 function makeFreestandingGeometry() {
-  // Same geometry as wall — freestanding's top is always hidden by cell above
-  // (hasAbove=true invariant). Differentiation via visual detail deferred.
-  return makeBevelBox();
+  // Plain 1×1×1 — visually identical to 'wall' on purpose.
+  // Narrowed geometries (earlier T-008 iteration) created a visible
+  // horizontal gap where a freestanding cell met a full-width wall/roof
+  // neighbor. Since freestanding always has hasAbove=true, its top is
+  // never visible anyway — so any would-be distinction can't show.
+  return new THREE.BoxGeometry(1, 1, 1);
 }
 
 function makeCornerGeometry() {
-  // Same as wall (gap-avoidance). Visual differentiation deferred.
-  return makeBevelBox();
+  // Plain 1×1×1 for the same gap-avoidance reason as freestanding.
+  // Corner visual differentiation deferred to a future task where
+  // we'd need per-face vertex manipulation (not shape scaling).
+  return new THREE.BoxGeometry(1, 1, 1);
 }
 
 function makeRoofGeometry() {
-  // Bevelled base (height 0.7) + square pyramid on top (height 0.6).
-  // Base uses bevel-box; pyramid stays sharp for classic "roof peak" read.
-  // Total height 1.3 (30% over wall — satisfies ≥15% silhouette delta).
-  //
-  // NOTE: mergeGeometries requires uniform indexed/non-indexed state across
-  // inputs. RoundedBoxGeometry is indexed. Convert both to non-indexed first.
-  const base = makeBevelBox(1, 0.7, 1);
-  base.translate(0, -0.15, 0); // bottom at y=-0.5 (cell bottom), top at y=+0.2
+  // Cube base (height 0.7) + square pyramid (height 0.6) on top.
+  // Pyramid is Cone with 4 radial segments rotated π/4 so base vertices
+  // land on the cube corners (±0.5, *, ±0.5). Total height 1.3 (30%
+  // over wall — satisfies ≥15% silhouette delta).
+  const base = new THREE.BoxGeometry(1, 0.7, 1);
+  base.translate(0, -0.15, 0); // bottom at y=-0.5 (cell bottom)
+  // Pyramid radius = √2/2 so vertices land EXACTLY at cube corners (±0.5)
+  // after π/4 rotation. Using a rounded 0.71 left a 0.002 offset that
+  // broke the bbox regression test.
   const pyramid = new THREE.ConeGeometry(Math.SQRT1_2, 0.6, 4);
   pyramid.rotateY(Math.PI / 4);
-  pyramid.translate(0, 0.5, 0); // apex at y=+0.8 (0.3 above cell top)
-  // Normalize both to non-indexed before merge (only convert indexed ones —
-  // Three.js warns if you call toNonIndexed on already-non-indexed geometry).
-  const baseND = base.index ? base.toNonIndexed() : base;
-  const pyramidND = pyramid.index ? pyramid.toNonIndexed() : pyramid;
-  return mergeGeometries([baseND, pyramidND]);
+  pyramid.translate(0, 0.5, 0); // apex at y=+0.8 (0.3 above cell)
+  return mergeGeometries([base, pyramid]);
 }
 
 /**
